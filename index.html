@@ -893,7 +893,8 @@ function onUrunGoruntule(payload) {
     properties: {
       "urun":         ciDeger(payload.urun),
       "login_durumu": ciDeger(payload.isLoggedIn ? "login" : "anonim"),
-      "bindingid":    ciDeger(authId),
+      // bindingid = {entityType}/{entityId} (kişi kimliği DEĞİL — o setUser ile gider)
+      "bindingid":    ciDeger("urun/" + ciDeger(payload.urun, "genel")),
       "urun_adi":     ciDeger(payload.urunAd),
       "ziyaretci_id": ciDeger(payload.visitorId)
     }
@@ -920,7 +921,8 @@ function onTeklifAl(payload) {
     version: "1.0.0",
     // TÜM değerler ciDeger() ile korunuyor → hiçbiri boş gidemez (CI kısıtı)
     properties: {
-      "bindingid":     ciDeger(authId),
+      // bindingid = {entityType}/{entityId} (kişi kimliği DEĞİL — o setUser ile gider)
+      "bindingid":     ciDeger("teklif/" + ciDeger(payload.urun, "genel")),
       "urun_adi":      ciDeger(payload.urunAd, "belirtilmedi"),
       "login_durumu":  ciDeger(payload.isLoggedIn ? "login" : "anonim"),
       "ek_bilgi":      ciDeger(payload.ekBilgi, "yok"),
@@ -952,7 +954,9 @@ function onHasarBildir(payload) {
     // GİRMESİNİ engelliyor. Bu yüzden burada da varsayılan değer şart.
     properties: {
       "aciklama":     ciDeger(payload.aciklama, "aciklama girilmedi"),
-      "bindingid":    ciDeger(authId),
+      // bindingid = {entityType}/{entityId} — journey ÖRNEĞİ eşleştirmesi içindir.
+      // Kişi kimliği buradan DEĞİL, setUser({authId}) üzerinden çözülür.
+      "bindingid":    ciDeger("hasar/" + ciDeger(payload.hasarNo, "yeni")),
       "hasar_no":     ciDeger(payload.hasarNo),
       "hasar_turu":   ciDeger(payload.hasarTuru, "belirtilmedi"),
       "login_durumu": ciDeger(payload.isLoggedIn ? "login" : "anonim"),
@@ -962,6 +966,65 @@ function onHasarBildir(payload) {
       "utm_campaign": ciDeger(payload.utm_campaign, "yok")
     }
   });
+}
+
+/* --- 4b) TAMAMLAYICI SAĞLIK — İLGİ SİNYALİ (kalma süresi) ---
+   CI-Journeys Tetikleyici: "Sigorta - Tamamlayıcı Sağlık"
+   Ziyaretçi sağlık ürünü sayfasında 5 SANİYEDEN fazla kalırsa tetiklenir.
+   Tıklama "baktı" der; 5 sn kalmak "gerçekten ilgilendi" der → niyet sinyali. */
+function onSaglikIlgi(payload) {
+  if (!ciReady()) return;
+
+  var authId = payload.isLoggedIn && payload.contact
+      ? payload.contact.email
+      : payload.visitorId;
+
+  ciLog("Tamamlayıcı Sağlık İlgi (msdynmkt_0498694...)", payload);
+  ciSetUser(authId);   // ← kişi kimliği BURADAN çözülür (authId)
+  ciTrackEvent({
+    name: "msdynmkt_04986940d1aa443c871cb3779610097a", // Tetikleyici: Sigorta - Tamamlayıcı Sağlık
+    ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
+    version: "1.0.0",
+    properties: {
+      // bindingid = {entityType}/{entityId} (kişi kimliği DEĞİL)
+      "bindingid":    ciDeger("urunilgi/" + ciDeger(payload.urun, "saglik")),
+      "kalma_suresi": ciDeger(payload.kalmaSuresi, "5"),
+      "login_durumu": ciDeger(payload.isLoggedIn ? "login" : "anonim"),
+      "urun":         ciDeger(payload.urun, "saglik"),
+      "urun_adi":     ciDeger(payload.urunAd, "Tamamlayıcı Sağlık"),
+      "ziyaretci_id": ciDeger(payload.visitorId)
+    }
+  });
+}
+
+/* ---- İLGİ SAYACI (dwell time) ----
+   Sağlık ürün sayfası açılınca 5 sn'lik sayaç başlar. Kullanıcı süre dolmadan
+   başka sayfaya geçerse sayaç iptal edilir → sadece GERÇEK ilgi tetiklenir.
+   Aynı ziyarette tekrar tetiklenmez. */
+var ILGI_ESIK_SN = 5;
+var _ilgiTimer = null;
+var _ilgiGonderildi = false;
+
+function ilgiSayaciDurdur() {
+  if (_ilgiTimer) { clearTimeout(_ilgiTimer); _ilgiTimer = null; }
+}
+
+function ilgiSayaciBaslat(urunKey, urunAd) {
+  ilgiSayaciDurdur();
+  if (urunKey !== 'saglik') return;   // trigger yalnızca Tamamlayıcı Sağlık için
+  _ilgiGonderildi = false;
+  console.log("[MOBVEN-CI] ⏱ İlgi sayacı başladı — " + ILGI_ESIK_SN + " sn (" + urunAd + ")");
+  _ilgiTimer = setTimeout(function () {
+    _ilgiTimer = null;
+    if (_ilgiGonderildi) return;
+    _ilgiGonderildi = true;
+    console.log("[MOBVEN-CI] ⏱ " + ILGI_ESIK_SN + " sn doldu → İLGİ SİNYALİ gönderiliyor");
+    onSaglikIlgi(triggerContext({
+      urun: urunKey,
+      urunAd: urunAd,
+      kalmaSuresi: String(ILGI_ESIK_SN)
+    }));
+  }, ILGI_ESIK_SN * 1000);
 }
 
 /* --- 5) ÖDEME / GECİKEN TAKSİT --- */
@@ -981,6 +1044,9 @@ function onYenileme(payload) {
    ========================================================================= */
 
 function go(page, opts) {
+  // Sayfadan ayrılıyoruz → ilgi sayacını iptal et (5 sn dolmadıysa sinyal yok)
+  ilgiSayaciDurdur();
+
   // Hesabım login gerektirir
   if (page === 'hesabim' && !App.isLoggedIn) { openLogin('hesabim'); return; }
 
@@ -1094,6 +1160,9 @@ function openProduct(key) {
       </div>
     </div>`;
   go('urun-detay');
+
+  // go() sayacı durdurur → sayfa açıldıktan SONRA yeniden başlat
+  ilgiSayaciBaslat(key, p.ad);
 }
 
 /* ---------- Teklif formu hazırlığı ---------- */
