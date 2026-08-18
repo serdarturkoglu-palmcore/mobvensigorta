@@ -786,8 +786,22 @@ function ciReady() {
   if (!window["msdynmkt"] && window["MSCI"]) {
     window["msdynmkt"] = window["MSCI"];
   }
-  return window["msdynmkt"]
+  var hazir = window["msdynmkt"]
       && typeof window["msdynmkt"].trackEvent === "function";
+  if (!hazir) {
+    console.warn("[MOBVEN-CI] SDK HAZIR DEĞİL — event gönderilemedi. MSCI:", window["MSCI"], "msdynmkt:", window["msdynmkt"]);
+  }
+  return hazir;
+}
+
+/* Teşhis: her event'i konsola bas (canlı test için) */
+function ciLog(eventAdi, payload) {
+  try {
+    console.log("[MOBVEN-CI] EVENT GÖNDERİLDİ →", eventAdi, {
+      authId: payload && (payload.contact ? payload.contact.email : payload.visitorId),
+      login: payload && payload.isLoggedIn
+    });
+  } catch(e){}
 }
 
 /* --- 1) LOGIN --- */
@@ -797,21 +811,13 @@ function onLogin(payload) {
   // KİMLİK BİRLEŞTİRME (identity stitching):
   // Login anında CI'a e-posta kimliğini bildiririz. CI, autoCapture ile bu
   // tarayıcıda daha önce izlediği ANONİM gezinmeyi (ürün görüntüleme vb.)
-  // bu kimliğe bağlar → "anonim gezen kişi = Ahmet Yılmaz" birleşir.
+  // bu kimliğe bağlar → "anonim gezen kişi = Serdar Türkoğlu" birleşir.
+  ciLog("Login / setUser", payload);
   window["msdynmkt"].setUser({ authId: payload.email });
 
-  // Giriş event'i (Hoş Geldin / oturum başlangıcı journey'i için)
-  window["msdynmkt"].trackEvent({
-    name: "msdynmkt_sigorta_giris",   // (opsiyonel) CI'da 'Sigorta - Giriş' trigger'ı açılırsa bağlanır
-    ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
-    version: "1.0.0",
-    properties: {
-      "bindingid":     payload.email || "",
-      "onceki_ziyaretci_id": payload.oncekiZiyaretciId || "",  // birleştirilen anonim ID
-      "utm_source":    payload.utm_source || "",
-      "utm_campaign":  payload.utm_campaign || ""
-    }
-  });
+  // NOT: Giriş için ayrı bir CI trigger'ı henüz açılmadı. CI'da
+  // "Sigorta - Giriş" trigger'ı oluşturduğunda buraya gerçek event ID'si
+  // ile trackEvent eklenecek. Şu an sadece kimlik bildiriliyor (setUser).
 }
 
 /* --- 2) ÜRÜN GÖRÜNTÜLEME (web davranışı) --- */
@@ -826,6 +832,7 @@ function onUrunGoruntule(payload) {
       ? payload.contact.email
       : payload.visitorId;
 
+  ciLog("Ürün Görüntüleme (msdynmkt_b10551...)", payload);
   window["msdynmkt"].setUser({ authId: authId });
   window["msdynmkt"].trackEvent({
     name: "msdynmkt_b10551242f0e4fbe88bb7ae8fa47f794", // Tetikleyici: Sigorta - Ürün Görüntüleme
@@ -855,6 +862,7 @@ function onTeklifAl(payload) {
       ? payload.contact.email
       : payload.visitorId;
 
+  ciLog("Teklif Etkileşimi (msdynmkt_d969a0...)", payload);
   window["msdynmkt"].setUser({ authId: authId });
   window["msdynmkt"].trackEvent({
     name: "msdynmkt_d969a00dddb34bfda7b7166e463bce8d", // Tetikleyici: Sigorta - Teklif Etkileşimi
