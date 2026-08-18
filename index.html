@@ -769,7 +769,10 @@ function triggerContext(extra) {
   return Object.assign({
     isLoggedIn: App.isLoggedIn,
     contact: App.isLoggedIn ? App.contact : null,
-    visitorId: App.isLoggedIn ? null : ensureVisitorId(),
+    // ÖNEMLİ: login olsa bile ziyaretçi kimliği KORUNUR.
+    // CI custom trigger'larında boş (null/"") öznitelik değeri event'in
+    // reddedilmesine yol açıyor → her öznitelik daima dolu gitmeli.
+    visitorId: ensureVisitorId(),
     zaman: new Date().toISOString(),
     // UTM kaynağı — her trigger payload'ına otomatik eklenir
     utm_source:   utm.utm_source   || '',
@@ -805,6 +808,18 @@ function ciSetUser(authId) {
 }
 function ciTrackEvent(evt) {
   var o = ciObj(); if (!o) return;
+  // TEŞHİS: boş değer varsa uyar (CI böyle event'leri sessizce reddediyor)
+  try {
+    var p = evt && evt.properties || {};
+    var bos = Object.keys(p).filter(function(k){
+      return p[k] === null || p[k] === undefined || String(p[k]).trim() === "";
+    });
+    if (bos.length) {
+      console.error("[MOBVEN-CI] ✗ BOŞ ÖZNİTELİK VAR → CI bu event'i REDDEDER:", bos, evt.name);
+    } else {
+      console.log("[MOBVEN-CI] ✓ Öznitelikler dolu:", p);
+    }
+  } catch(e){}
   try { if (typeof o.trackEvent === "function") o.trackEvent(evt); }
   catch(e){ console.warn("[MOBVEN-CI] trackEvent atlandı:", e && e.message); }
 }
@@ -812,6 +827,22 @@ function ciTrackView(view) {
   var o = ciObj(); if (!o) return;
   try { if (typeof o.trackView === "function") o.trackView(view); }
   catch(e){ console.warn("[MOBVEN-CI] trackView atlandı:", e && e.message); }
+}
+
+/* ---------------------------------------------------------------------------
+   BOŞ DEĞER KORUMASI  (CI'ın bilinen kısıtı)
+   ---------------------------------------------------------------------------
+   Microsoft dokümantasyonu (Known issues): "When defining custom triggers,
+   ensure that all attributes are defined. Any attribute with a null value
+   causes the trigger to fail... null values cannot be passed in custom
+   triggers." Yani bir özniteliğe boş değer gönderilirse event REDDEDİLİR ve
+   tarayıcı konsolunda HİÇBİR hata görünmez.
+   Bu fonksiyon her özniteliğin daima dolu gitmesini garanti eder.
+--------------------------------------------------------------------------- */
+function ciDeger(v, varsayilan) {
+  if (v === null || v === undefined) return varsayilan || "-";
+  var s = String(v).trim();
+  return s.length ? s : (varsayilan || "-");
 }
 
 /* Teşhis: her event'i konsola bas (canlı test için) */
@@ -858,12 +889,13 @@ function onUrunGoruntule(payload) {
     name: "msdynmkt_b10551242f0e4fbe88bb7ae8fa47f794", // Tetikleyici: Sigorta - Ürün Görüntüleme
     ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
     version: "1.0.0",
+    // TÜM değerler ciDeger() ile korunuyor → hiçbiri boş gidemez (CI kısıtı)
     properties: {
-      "urun":         payload.urun || "",
-      "login_durumu": payload.isLoggedIn ? "login" : "anonim",
-      "bindingid":    authId || "",
-      "urun_adi":     payload.urunAd || "",
-      "ziyaretci_id": payload.visitorId || ""
+      "urun":         ciDeger(payload.urun),
+      "login_durumu": ciDeger(payload.isLoggedIn ? "login" : "anonim"),
+      "bindingid":    ciDeger(authId),
+      "urun_adi":     ciDeger(payload.urunAd),
+      "ziyaretci_id": ciDeger(payload.visitorId)
     }
   });
 }
@@ -886,14 +918,15 @@ function onTeklifAl(payload) {
     name: "msdynmkt_d969a00dddb34bfda7b7166e463bce8d", // Tetikleyici: Sigorta - Teklif Etkileşimi
     ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
     version: "1.0.0",
+    // TÜM değerler ciDeger() ile korunuyor → hiçbiri boş gidemez (CI kısıtı)
     properties: {
-      "bindingid":     authId || "",
-      "urun_adi":      payload.urunAd || "",
-      "login_durumu":  payload.isLoggedIn ? "login" : "anonim",
-      "ek_bilgi":      payload.ekBilgi || "",
-      "urun":          payload.urun || "",
-      "ziyaretci_id":  payload.visitorId || "",
-      "tamamlandi":    payload.tamamlandi || "hayir"   // form gönderildiyse "evet", yarım bırakıldıysa "hayir"
+      "bindingid":     ciDeger(authId),
+      "urun_adi":      ciDeger(payload.urunAd, "belirtilmedi"),
+      "login_durumu":  ciDeger(payload.isLoggedIn ? "login" : "anonim"),
+      "ek_bilgi":      ciDeger(payload.ekBilgi, "yok"),
+      "urun":          ciDeger(payload.urun, "belirtilmedi"),
+      "ziyaretci_id":  ciDeger(payload.visitorId),
+      "tamamlandi":    ciDeger(payload.tamamlandi, "hayir")   // "evet" / "hayir"
     }
   });
 }
@@ -1281,7 +1314,9 @@ function doLogin(e) {
     onLogin(triggerContext({ email: email, oncekiZiyaretciId: oncekiZiyaretciId }));
   } catch(err) { console.warn("[MOBVEN-CI] onLogin atlandı:", err && err.message); }
 
-  App.visitorId = null;   // artık kimlik e-posta üzerinden
+  // NOT: App.visitorId BİLEREK korunuyor (eskiden null yapılıyordu).
+  // 1) CI trigger'ları boş öznitelik kabul etmiyor → ziyaretci_id dolu kalmalı
+  // 2) Kimlik birleştirme hikayesi için anonim ID'yi taşımak zaten daha doğru
 
   closeLogin();
   renderUserArea();
