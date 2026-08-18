@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Mobven Sigorta — Müşteri Portalı</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2316528c' d='M12 2.5 4 5.5v5.2c0 4.7 3.2 8.3 8 10.3 4.8-2 8-5.6 8-10.3V5.5L12 2.5Z'/%3E%3Cpath fill='none' stroke='white' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' d='M9 11.5l2.2 2.2L15.5 9'/%3E%3C/svg%3E" />
 
 <!-- ===========================================================================
      CUSTOMER INSIGHTS - JOURNEYS  ·  WEB İZLEME (Web Tracking) + EVENT SDK
@@ -778,20 +779,39 @@ function triggerContext(extra) {
   }, extra || {});
 }
 
+/* CI SDK nesnesini bul (loader window.MSCI olarak oluşturur). */
+function ciObj() {
+  if (typeof window === "undefined") return null;
+  // Öncelik: gerçek MSCI nesnesi. Köprü olarak msdynmkt de kabul.
+  return window["MSCI"] || window["msdynmkt"] || null;
+}
+
 /* CI SDK yüklü ve hazır mı? Demo modunda (SDK yoksa) trigger'lar sessizce atlanır. */
 function ciReady() {
-  if (typeof window === "undefined") return false;
-  // CI Web İzleme loader'ı nesneyi window.MSCI olarak oluşturur.
-  // trigger fonksiyonları window.msdynmkt kullandığı için köprüle:
-  if (!window["msdynmkt"] && window["MSCI"]) {
-    window["msdynmkt"] = window["MSCI"];
-  }
-  var hazir = window["msdynmkt"]
-      && typeof window["msdynmkt"].trackEvent === "function";
+  var o = ciObj();
+  var hazir = o && typeof o.trackEvent === "function";
   if (!hazir) {
-    console.warn("[MOBVEN-CI] SDK HAZIR DEĞİL — event gönderilemedi. MSCI:", window["MSCI"], "msdynmkt:", window["msdynmkt"]);
+    console.warn("[MOBVEN-CI] SDK HAZIR DEĞİL — event gönderilemedi.");
   }
   return hazir;
+}
+
+/* CI çağrılarını GÜVENLİ yap — hata olursa demo bozulmasın (setUser/trackView
+   bundle tam yüklenmeden çağrılırsa 'push undefined' hatası verebiliyordu). */
+function ciSetUser(authId) {
+  var o = ciObj(); if (!o) return;
+  try { if (typeof o.setUser === "function") o.setUser({ authId: authId }); }
+  catch(e){ console.warn("[MOBVEN-CI] setUser atlandı:", e && e.message); }
+}
+function ciTrackEvent(evt) {
+  var o = ciObj(); if (!o) return;
+  try { if (typeof o.trackEvent === "function") o.trackEvent(evt); }
+  catch(e){ console.warn("[MOBVEN-CI] trackEvent atlandı:", e && e.message); }
+}
+function ciTrackView(view) {
+  var o = ciObj(); if (!o) return;
+  try { if (typeof o.trackView === "function") o.trackView(view); }
+  catch(e){ console.warn("[MOBVEN-CI] trackView atlandı:", e && e.message); }
 }
 
 /* Teşhis: her event'i konsola bas (canlı test için) */
@@ -813,7 +833,7 @@ function onLogin(payload) {
   // tarayıcıda daha önce izlediği ANONİM gezinmeyi (ürün görüntüleme vb.)
   // bu kimliğe bağlar → "anonim gezen kişi = Serdar Türkoğlu" birleşir.
   ciLog("Login / setUser", payload);
-  window["msdynmkt"].setUser({ authId: payload.email });
+  ciSetUser(payload.email);
 
   // NOT: Giriş için ayrı bir CI trigger'ı henüz açılmadı. CI'da
   // "Sigorta - Giriş" trigger'ı oluşturduğunda buraya gerçek event ID'si
@@ -833,8 +853,8 @@ function onUrunGoruntule(payload) {
       : payload.visitorId;
 
   ciLog("Ürün Görüntüleme (msdynmkt_b10551...)", payload);
-  window["msdynmkt"].setUser({ authId: authId });
-  window["msdynmkt"].trackEvent({
+  ciSetUser(authId);
+  ciTrackEvent({
     name: "msdynmkt_b10551242f0e4fbe88bb7ae8fa47f794", // Tetikleyici: Sigorta - Ürün Görüntüleme
     ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
     version: "1.0.0",
@@ -863,8 +883,8 @@ function onTeklifAl(payload) {
       : payload.visitorId;
 
   ciLog("Teklif Etkileşimi (msdynmkt_d969a0...)", payload);
-  window["msdynmkt"].setUser({ authId: authId });
-  window["msdynmkt"].trackEvent({
+  ciSetUser(authId);
+  ciTrackEvent({
     name: "msdynmkt_d969a00dddb34bfda7b7166e463bce8d", // Tetikleyici: Sigorta - Teklif Etkileşimi
     ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
     version: "1.0.0",
@@ -892,8 +912,8 @@ function onHasarBildir(payload) {
   // Hasar bildirimi login gerektirir → kimlik e-posta üzerinden
   var authId = payload.contact ? payload.contact.email : (payload.visitorId || "");
 
-  window["msdynmkt"].setUser({ authId: authId });
-  window["msdynmkt"].trackEvent({
+  ciSetUser(authId);
+  ciTrackEvent({
     name: "msdynmkt_sigorta_hasarbildirimi_092210388", // Tetikleyici: Sigorta - Hasar Bildirimi
     ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
     version: "1.0.0",
@@ -967,10 +987,8 @@ function trackSayfaGoruntuleme(page, ekAd) {
     };
     var ad = ekAd || sayfaAdlari[page] || page;
     var sanalUri = window.location.origin + window.location.pathname + '#' + page;
-    if (typeof window["msdynmkt"].trackView === "function") {
-      window["msdynmkt"].trackView({ name: ad, uri: sanalUri });
-      console.log("[MOBVEN-CI] SAYFA GÖRÜNTÜLEME →", ad, sanalUri);
-    }
+    ciTrackView({ name: ad, uri: sanalUri });
+    console.log("[MOBVEN-CI] SAYFA GÖRÜNTÜLEME →", ad, sanalUri);
   } catch(e){ console.warn("[MOBVEN-CI] trackView hatası:", e); }
 }
 
@@ -1263,7 +1281,10 @@ function doLogin(e) {
   App.contact = buildDemoContact(email);
 
   // TRIGGER: login yapan müşteri (kimlik birleştirme dahil)
-  onLogin(triggerContext({ email: email, oncekiZiyaretciId: oncekiZiyaretciId }));
+  // CI hatası login akışını ASLA durdurmamalı → try/catch
+  try {
+    onLogin(triggerContext({ email: email, oncekiZiyaretciId: oncekiZiyaretciId }));
+  } catch(err) { console.warn("[MOBVEN-CI] onLogin atlandı:", err && err.message); }
 
   App.visitorId = null;   // artık kimlik e-posta üzerinden
 
