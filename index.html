@@ -945,16 +945,21 @@ function onHasarBildir(payload) {
     name: "msdynmkt_sigorta_hasarbildirimi_092210388", // Tetikleyici: Sigorta - Hasar Bildirimi
     ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
     version: "1.0.0",
+    // TÜM değerler ciDeger() ile korunuyor.
+    // KRİTİK: utm_source / utm_campaign, UTM'siz girişte BOŞ kalıyordu.
+    // Boş öznitelik trigger'ın CI'a ulaşmasını engellemiyor (tümleştirme oluyor)
+    // ama JOURNEY ÇALIŞMA ANINDA "System Failure" verip kişinin yolculuğa
+    // GİRMESİNİ engelliyor. Bu yüzden burada da varsayılan değer şart.
     properties: {
-      "aciklama":     payload.aciklama || "",
-      "bindingid":    authId,
-      "hasar_no":     payload.hasarNo || "",
-      "hasar_turu":   payload.hasarTuru || "",
-      "login_durumu": payload.isLoggedIn ? "login" : "anonim",
-      "police_no":    payload.police || "",
-      "urun":         payload.urun || "",
-      "utm_source":   payload.utm_source || "",
-      "utm_campaign": payload.utm_campaign || ""
+      "aciklama":     ciDeger(payload.aciklama, "aciklama girilmedi"),
+      "bindingid":    ciDeger(authId),
+      "hasar_no":     ciDeger(payload.hasarNo),
+      "hasar_turu":   ciDeger(payload.hasarTuru, "belirtilmedi"),
+      "login_durumu": ciDeger(payload.isLoggedIn ? "login" : "anonim"),
+      "police_no":    ciDeger(payload.police, "belirtilmedi"),
+      "urun":         ciDeger(payload.urun, "belirtilmedi"),
+      "utm_source":   ciDeger(payload.utm_source, "dogrudan"),
+      "utm_campaign": ciDeger(payload.utm_campaign, "yok")
     }
   });
 }
