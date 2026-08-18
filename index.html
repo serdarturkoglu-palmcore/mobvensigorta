@@ -859,13 +859,11 @@ function onUrunGoruntule(payload) {
     ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
     version: "1.0.0",
     properties: {
-      "bindingid":    authId || "",
-      "login_durumu": payload.isLoggedIn ? "login" : "anonim",
       "urun":         payload.urun || "",
+      "login_durumu": payload.isLoggedIn ? "login" : "anonim",
+      "bindingid":    authId || "",
       "urun_adi":     payload.urunAd || "",
-      "ziyaretci_id": payload.visitorId || "",
-      "utm_source":   payload.utm_source || "",
-      "utm_campaign": payload.utm_campaign || ""
+      "ziyaretci_id": payload.visitorId || ""
     }
   });
 }
@@ -890,15 +888,12 @@ function onTeklifAl(payload) {
     version: "1.0.0",
     properties: {
       "bindingid":     authId || "",
-      "ek_bilgi":      payload.ekBilgi || "",
-      "login_durumu":  payload.isLoggedIn ? "login" : "anonim",
-      "tamamlandi":    payload.tamamlandi || "hayir",   // form gönderildiyse "evet", yarım bırakıldıysa "hayir"
-      "urun":          payload.urun || "",
       "urun_adi":      payload.urunAd || "",
+      "login_durumu":  payload.isLoggedIn ? "login" : "anonim",
+      "ek_bilgi":      payload.ekBilgi || "",
+      "urun":          payload.urun || "",
       "ziyaretci_id":  payload.visitorId || "",
-      "utm_source":    payload.utm_source || "",
-      "utm_medium":    payload.utm_medium || "",
-      "utm_campaign":  payload.utm_campaign || ""
+      "tamamlandi":    payload.tamamlandi || "hayir"   // form gönderildiyse "evet", yarım bırakıldıysa "hayir"
     }
   });
 }
