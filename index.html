@@ -948,8 +948,30 @@ function go(page, opts) {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
+  // CI SAYFA GÖRÜNTÜLEME (SPA olduğu için manuel trackView):
+  // URL değişmediğinden autoCapture yeni "view" üretmez. Her sayfa geçişini
+  // CI'a ayrı ziyaret olarak bildiriyoruz ki profil/İçgörüler'de görünsün.
+  trackSayfaGoruntuleme(page);
+
   if (page === 'hesabim') renderHesabim();
   if (page === 'teklif')  prepTeklifForm(opts && opts.urun);
+}
+
+/* SPA sayfa geçişini CI'a bildir (trackView) */
+function trackSayfaGoruntuleme(page, ekAd) {
+  if (!ciReady()) return;
+  try {
+    var sayfaAdlari = {
+      home:'Ana Sayfa', urunler:'Ürünler', 'urun-detay':'Ürün Detay',
+      teklif:'Teklif Al', hesabim:'Hesabım', sonuc:'Sonuç', kampanya:'Kampanya'
+    };
+    var ad = ekAd || sayfaAdlari[page] || page;
+    var sanalUri = window.location.origin + window.location.pathname + '#' + page;
+    if (typeof window["msdynmkt"].trackView === "function") {
+      window["msdynmkt"].trackView({ name: ad, uri: sanalUri });
+      console.log("[MOBVEN-CI] SAYFA GÖRÜNTÜLEME →", ad, sanalUri);
+    }
+  } catch(e){ console.warn("[MOBVEN-CI] trackView hatası:", e); }
 }
 
 function requireLoginThen(page) {
@@ -988,6 +1010,8 @@ function openProduct(key) {
 
   // TRIGGER: ürün görüntüleme (web davranış sinyali)
   onUrunGoruntule(triggerContext({ urun: key, urunAd: p.ad }));
+  // CI'a ürün adıyla sayfa görüntüleme bildir (İçgörüler'de "Ürün: Kasko" görünsün)
+  trackSayfaGoruntuleme('urun-detay', 'Ürün: ' + p.ad);
 
   const c = document.getElementById('prodDetailContainer');
   c.innerHTML = `
