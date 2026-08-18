@@ -35,6 +35,26 @@
             }
         });
 </script>
+
+<!-- ===========================================================================
+     CUSTOM TRIGGER SDK  (msdynmkt)  ·  WEB İZLEME SDK'SINDAN AYRIDIR
+     ---------------------------------------------------------------------------
+     ÖNEMLİ: Yukarıdaki WebTracking.bundle.js SADECE web izleme içindir
+     (autoCapture sayfa görüntüleme/tıklama) ve window["MSCI"] oluşturur.
+     Custom trigger event'leri (trackEvent) ise BU SDK üzerinden gitmelidir:
+     msei-0.js → window["msdynmkt"] oluşturur.
+     Trigger event'i web izleme SDK'sı ile gönderilirse CI'a ULAŞIR (tetikleyici
+     "Tümleştirildi" olur) ama journey kişiyi çözemez ve YOLCULUK HİÇ BAŞLAMAZ.
+     İki SDK farklı global isim kullandığı için yan yana sorunsuz çalışır.
+=========================================================================== -->
+<script>
+(function (a, t, i) { var e = "MSEI"; var s = "Analytics"; var o = e + "queue"; a[o] = a[o] || []; var r = a[e] || function (n) { var t = {}; t[s] = {}; function e(e) { while (e.length) { var r = e.pop(); t[s][r] = function (e) { return function () { a[o].push([e, n, arguments]) } }(r) } } var r = "track"; var i = "set"; e([r + "Event", r + "View", r + "Action", i + "Property", i + "User", "initialize", "teardown"]); return t }(i.name); var n = i.name; if (!a[e]) { a[n] = r[s]; a[o].push(["new", n]); setTimeout(function () { var e = "script"; var r = t.createElement(e); r.async = 1; r.src = i.src; var n = t.getElementsByTagName(e)[0]; n.parentNode.insertBefore(r, n) }, 1) } else { a[n] = new r[s] } if (i.user) { a[n].setUser(i.user) } if (i.props) { for (var c in i.props) { a[n].setProperty(c, i.props[c]) } } a[n].initialize(i.cfg) })(window, document, {
+    src: "https://download.pi.dynamics.com/sdk/web/msei-0.js",
+    name: "msdynmkt",
+    cfg: { ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501" }
+});
+</script>
+
 <style>
   :root {
     /* Kurumsal mavi tema */
@@ -782,19 +802,29 @@ function triggerContext(extra) {
   }, extra || {});
 }
 
-/* CI SDK nesnesini bul (loader window.MSCI olarak oluşturur). */
-function ciObj() {
+/* --- İKİ AYRI SDK ---
+   window["msdynmkt"] → msei-0.js      → CUSTOM TRIGGER event'leri (trackEvent/setUser)
+   window["MSCI"]     → WebTracking.js → WEB İZLEME (trackView / autoCapture)
+   Trigger'ları YANLIŞ SDK ile göndermek journey'nin hiç başlamamasına yol açar. */
+function ciTriggerObj() {
   if (typeof window === "undefined") return null;
-  // Öncelik: gerçek MSCI nesnesi. Köprü olarak msdynmkt de kabul.
-  return window["MSCI"] || window["msdynmkt"] || null;
+  return window["msdynmkt"] || window["MSCI"] || null;   // öncelik: trigger SDK
 }
+function ciWebObj() {
+  if (typeof window === "undefined") return null;
+  return window["MSCI"] || null;                          // yalnızca web izleme
+}
+/* Geriye dönük uyumluluk */
+function ciObj() { return ciTriggerObj(); }
 
 /* CI SDK yüklü ve hazır mı? Demo modunda (SDK yoksa) trigger'lar sessizce atlanır. */
 function ciReady() {
-  var o = ciObj();
+  var o = ciTriggerObj();
   var hazir = o && typeof o.trackEvent === "function";
   if (!hazir) {
-    console.warn("[MOBVEN-CI] SDK HAZIR DEĞİL — event gönderilemedi.");
+    console.warn("[MOBVEN-CI] TRIGGER SDK HAZIR DEĞİL — event gönderilemedi.");
+  } else if (!window["msdynmkt"]) {
+    console.warn("[MOBVEN-CI] UYARI: msdynmkt SDK yok, web izleme SDK'sına düşüldü — journey başlamayabilir.");
   }
   return hazir;
 }
@@ -802,12 +832,36 @@ function ciReady() {
 /* CI çağrılarını GÜVENLİ yap — hata olursa demo bozulmasın (setUser/trackView
    bundle tam yüklenmeden çağrılırsa 'push undefined' hatası verebiliyordu). */
 function ciSetUser(authId) {
-  var o = ciObj(); if (!o) return;
-  try { if (typeof o.setUser === "function") o.setUser({ authId: authId }); }
-  catch(e){ console.warn("[MOBVEN-CI] setUser atlandı:", e && e.message); }
+  // Kimlik HER İKİ SDK'ya da bildirilir: trigger SDK journey kişi çözümlemesi için,
+  // web izleme SDK'sı ziyaret-profil eşleştirmesi için.
+  var t = ciTriggerObj(), w = ciWebObj();
+  try { if (t && typeof t.setUser === "function") t.setUser({ authId: authId }); }
+  catch(e){ console.warn("[MOBVEN-CI] trigger setUser atlandı:", e && e.message); }
+  try { if (w && w !== t && typeof w.setUser === "function") w.setUser({ authId: authId }); }
+  catch(e){ console.warn("[MOBVEN-CI] web setUser atlandı:", e && e.message); }
+}
+
+/* Telefonu CI'ın beklediği biçime çevir: +90XXXXXXXXXX */
+function normTel(v) {
+  var d = String(v || "").replace(/\D/g, "");
+  return d.length >= 10 ? "+90" + d.slice(-10) : "";
+}
+
+/* KİMLİK FALLBACK ALANLARI (contactpoint_*)
+   CI dokümantasyonu: "contactpoint_email is a special attribute... used as a
+   FALLBACK in case the full profile isn't available." authId ile kişi
+   çözülemezse CI bu alanlardan eşleştirme yapar. Yalnızca DEĞER VARSA eklenir
+   → hiçbir zaman boş öznitelik göndermeyiz. */
+function ciKimlikAlanlari(payload) {
+  var ek = {};
+  var mail = (payload.contact && payload.contact.email) || payload.email || "";
+  var tel  = normTel((payload.contact && payload.contact.telefon) || payload.telefon || "");
+  if (mail) ek["contactpoint_email"] = String(mail).trim();
+  if (tel)  ek["contactpoint_phone"] = tel;
+  return ek;
 }
 function ciTrackEvent(evt) {
-  var o = ciObj(); if (!o) return;
+  var o = ciTriggerObj(); if (!o) return;   // ← trigger SDK (msdynmkt)
   // TEŞHİS: boş değer varsa uyar (CI böyle event'leri sessizce reddediyor)
   try {
     var p = evt && evt.properties || {};
@@ -824,7 +878,7 @@ function ciTrackEvent(evt) {
   catch(e){ console.warn("[MOBVEN-CI] trackEvent atlandı:", e && e.message); }
 }
 function ciTrackView(view) {
-  var o = ciObj(); if (!o) return;
+  var o = ciWebObj(); if (!o) return;       // ← web izleme SDK (MSCI)
   try { if (typeof o.trackView === "function") o.trackView(view); }
   catch(e){ console.warn("[MOBVEN-CI] trackView atlandı:", e && e.message); }
 }
@@ -890,14 +944,14 @@ function onUrunGoruntule(payload) {
     ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
     version: "1.0.0",
     // TÜM değerler ciDeger() ile korunuyor → hiçbiri boş gidemez (CI kısıtı)
-    properties: {
+    properties: Object.assign({
       "urun":         ciDeger(payload.urun),
       "login_durumu": ciDeger(payload.isLoggedIn ? "login" : "anonim"),
       // bindingid = {entityType}/{entityId} (kişi kimliği DEĞİL — o setUser ile gider)
       "bindingid":    ciDeger("urun/" + ciDeger(payload.urun, "genel")),
       "urun_adi":     ciDeger(payload.urunAd),
       "ziyaretci_id": ciDeger(payload.visitorId)
-    }
+    }, ciKimlikAlanlari(payload))
   });
 }
 
@@ -920,7 +974,7 @@ function onTeklifAl(payload) {
     ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
     version: "1.0.0",
     // TÜM değerler ciDeger() ile korunuyor → hiçbiri boş gidemez (CI kısıtı)
-    properties: {
+    properties: Object.assign({
       // bindingid = {entityType}/{entityId} (kişi kimliği DEĞİL — o setUser ile gider)
       "bindingid":     ciDeger("teklif/" + ciDeger(payload.urun, "genel")),
       "urun_adi":      ciDeger(payload.urunAd, "belirtilmedi"),
@@ -929,7 +983,7 @@ function onTeklifAl(payload) {
       "urun":          ciDeger(payload.urun, "belirtilmedi"),
       "ziyaretci_id":  ciDeger(payload.visitorId),
       "tamamlandi":    ciDeger(payload.tamamlandi, "hayir")   // "evet" / "hayir"
-    }
+    }, ciKimlikAlanlari(payload))
   });
 }
 
@@ -952,7 +1006,7 @@ function onHasarBildir(payload) {
     // Boş öznitelik trigger'ın CI'a ulaşmasını engellemiyor (tümleştirme oluyor)
     // ama JOURNEY ÇALIŞMA ANINDA "System Failure" verip kişinin yolculuğa
     // GİRMESİNİ engelliyor. Bu yüzden burada da varsayılan değer şart.
-    properties: {
+    properties: Object.assign({
       "aciklama":     ciDeger(payload.aciklama, "aciklama girilmedi"),
       // bindingid = {entityType}/{entityId} — journey ÖRNEĞİ eşleştirmesi içindir.
       // Kişi kimliği buradan DEĞİL, setUser({authId}) üzerinden çözülür.
@@ -964,7 +1018,7 @@ function onHasarBildir(payload) {
       "urun":         ciDeger(payload.urun, "belirtilmedi"),
       "utm_source":   ciDeger(payload.utm_source, "dogrudan"),
       "utm_campaign": ciDeger(payload.utm_campaign, "yok")
-    }
+    }, ciKimlikAlanlari(payload))
   });
 }
 
@@ -985,7 +1039,7 @@ function onSaglikIlgi(payload) {
     name: "msdynmkt_04986940d1aa443c871cb3779610097a", // Tetikleyici: Sigorta - Tamamlayıcı Sağlık
     ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
     version: "1.0.0",
-    properties: {
+    properties: Object.assign({
       // bindingid = {entityType}/{entityId} (kişi kimliği DEĞİL)
       "bindingid":    ciDeger("urunilgi/" + ciDeger(payload.urun, "saglik")),
       "kalma_suresi": ciDeger(payload.kalmaSuresi, "5"),
@@ -993,7 +1047,7 @@ function onSaglikIlgi(payload) {
       "urun":         ciDeger(payload.urun, "saglik"),
       "urun_adi":     ciDeger(payload.urunAd, "Tamamlayıcı Sağlık"),
       "ziyaretci_id": ciDeger(payload.visitorId)
-    }
+    }, ciKimlikAlanlari(payload))
   });
 }
 
