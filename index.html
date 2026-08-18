@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mobven Sigorta — Müşteri Portalı</title>
+
+<!-- ===========================================================================
+     CUSTOMER INSIGHTS - JOURNEYS  ·  WEB İZLEME (Web Tracking) + EVENT SDK
+     ---------------------------------------------------------------------------
+     CI > Web İzleme ekranından alınan gerçek loader kodu. Bu script:
+       • window["msdynmkt"] nesnesini oluşturur (trackEvent çağrıları için)
+       • autoCapture ile sayfa görüntüleme (view) ve tıklama (click) izler
+       • UTM parametrelerini otomatik yakalar
+     trackEvent çağrıları (onTeklifAl / onHasarBildir / onUrunGoruntule) bu
+     nesne üzerinden CI'a event yollar. Ortam: Mobven Insurance (EUR).
+=========================================================================== -->
+<script>
+        (function (a, t, i) { var e = "MSCI"; var s = "Analytics"; var o = e + "queue"; a[o] = a[o] || []; var r = a[e] || function (n) { var t = {}; t[s] = {}; function e(e) { while (e.length) { var r = e.pop(); t[s][r] = function (e) { return function () { a[o].push([e, n, arguments]) } }(r) } } var r = "track"; var i = "set"; e([r + "Event", r + "View", r + "Action", i + "Config", i + "Property", i + "User", "initialize", "teardown"]); return t }(i.name); var n = i.name; if (!a[e]) { a[n] = r[s]; a[o].push(["new", n]); setTimeout(function () { var e = "script"; var r = t.createElement(e); r.async = 1; r.src = i.src; var n = t.getElementsByTagName(e)[0]; n.parentNode.insertBefore(r, n) }, 1) } else { a[n] = new r[s] } if (i.user) { a[n].setUser(i.user) } if (i.props) { for (var c in i.props) { a[n].setProperty(c, i.props[c]) } } a[n].initialize(i.cfg) })(window, document, {
+            src: "https://rdrect-eur1.mkt.dynamics.com/webtracking/WebTracking/WebTracking.bundle.js",
+            name: "MSCI",
+            cfg: {
+                ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
+                endpointUrl: "https://mobile.events.data.microsoft.com/OneCollector/1.0/",
+                autoCapture: {
+                    view: true,
+                    click: true
+                },
+                orgInfo: {
+                    orgId: "49f6ec1c-0b84-f111-b27b-7c1e5235037c",
+                    orgTenantId: "9a39b261-b2fc-4fc7-a937-ecc31b82d8aa",
+                    orgGeo: "EUR"
+                }
+            }
+        });
+</script>
+<style>
+  :root {
+    /* Kurumsal mavi tema */
+    --brand-900: #0a2540;
+    --brand-800: #103a63;
+    --brand-700: #16528c;
+    --brand-600: #1e6fb8;
+    --brand-500: #2a86d6;
+    --brand-400: #5aa6e6;
+    --brand-100: #e6f1fb;
+    --brand-50:  #f3f8fd;
+
+    --accent:    #00b8a9;   /* teal vurgu */
+    --accent-dark:#009488;
+
+    --ok:        #1f9d55;
+    --ok-bg:     #e7f6ec;
+    --warn:      #c77700;
+    --warn-bg:   #fdf3e2;
+    --danger:    #d64545;
+    --danger-bg: #fdecec;
+
+    --ink-900:   #12202e;
+    --ink-700:   #33475b;
+    --ink-500:   #607185;
+    --ink-300:   #9aa7b5;
+    --line:      #e2e8f0;
+    --bg:        #f5f8fc;
+    --white:     #ffffff;
+
+    --radius:    14px;
+    --radius-sm: 10px;
+    --shadow-sm: 0 1px 2px rgba(16,58,99,.06), 0 1px 3px rgba(16,58,99,.08);
+    --shadow-md: 0 4px 12px rgba(16,58,99,.10), 0 2px 4px rgba(16,58,99,.06);
+    --shadow-lg: 0 12px 32px rgba(16,58,99,.16);
+    --maxw: 1160px;
+    --font: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  svg.ico { width: 1em; height: 1em; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: -.125em; }
+  body {
+    font-family: var(--font);
+    color: var(--ink-900);
+    background: var(--bg);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--brand-600); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  img { max-width: 100%; }
+  h1,h2,h3,h4 { margin: 0 0 .4em; line-height: 1.25; color: var(--ink-900); }
+  p { margin: 0 0 1em; color: var(--ink-700); }
+
+  .container { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: inherit; font-size: 15px; font-weight: 600;
+    padding: 11px 20px; border-radius: var(--radius-sm);
+    border: 1px solid transparent; cursor: pointer; transition: .15s ease;
+    white-space: nowrap; text-decoration: none;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn-primary { background: var(--brand-600); color: #fff; }
+  .btn-primary:hover { background: var(--brand-700); }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-accent:hover { background: var(--accent-dark); }
+  .btn-ghost { background: transparent; color: var(--brand-600); border-color: var(--brand-100); }
+  .btn-ghost:hover { background: var(--brand-50); }
+  .btn-light { background: #fff; color: var(--brand-700); border-color: var(--line); }
+  .btn-light:hover { background: var(--brand-50); }
+  .btn-danger { background: var(--danger); color:#fff; }
+  .btn-danger:hover { background: #bd3a3a; }
+  .btn-sm { padding: 8px 14px; font-size: 13.5px; }
+  .btn-block { width: 100%; }
+  .qa { justify-content: flex-start; gap: 10px; margin-bottom: 10px; font-size: 14px; }
+  .qa svg.ico { color: var(--brand-600); font-size: 17px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .02em;
+  }
+  .badge-ok    { background: var(--ok-bg);    color: var(--ok); }
+  .badge-warn  { background: var(--warn-bg);  color: var(--warn); }
+  .badge-danger{ background: var(--danger-bg);color: var(--danger); }
+  .badge-info  { background: var(--brand-100);color: var(--brand-700); }
+
+  /* ---------- Header ---------- */
+  header.site {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav {
+    display: flex; align-items: center; gap: 8px;
+    height: 66px;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; cursor: pointer; margin-right: 22px; }
+  .brand .mark { width: 26px; height: 26px; color: var(--brand-700); flex: 0 0 auto; }
+  .brand .name { font-weight: 700; font-size: 19px; color: var(--brand-800); letter-spacing: -.015em; }
+  .brand .name span { color: var(--brand-600); font-weight: 700; }
+  .nav-links { display: flex; gap: 2px; margin-left: 6px; }
+  .nav-links a {
+    padding: 8px 13px; border-radius: 8px; color: var(--ink-700);
+    font-weight: 600; font-size: 14.5px; cursor: pointer;
+  }
+  .nav-links a:hover { background: var(--brand-50); color: var(--brand-700); text-decoration: none; }
+  .nav-links a.active { background: var(--brand-100); color: var(--brand-700); }
+  .nav-spacer { flex: 1; }
+  .nav-user { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--brand-100); color: var(--brand-700);
+    display: grid; place-items: center; font-weight: 700; font-size: 14px;
+    border: 1px solid var(--brand-100);
+  }
+  .user-meta { line-height: 1.15; }
+  .user-meta .u-name { font-weight: 700; font-size: 14px; }
+  .user-meta .u-sub { font-size: 12px; color: var(--ink-500); }
+
+  .hamburger { display: none; }
+
+  /* ---------- Pages ---------- */
+  main { min-height: 60vh; }
+  .page { display: none; animation: fade .3s ease; }
+  .page.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px);} to {opacity:1; transform:none;} }
+
+  .section { padding: 48px 0; }
+  .section-sm { padding: 30px 0; }
+
+  /* Hero */
+  .hero {
+    background:
+      radial-gradient(1200px 400px at 80% -10%, rgba(0,184,169,.18), transparent 60%),
+      linear-gradient(135deg, var(--brand-800), var(--brand-600));
+    color: #fff; padding: 60px 0 70px; position: relative; overflow: hidden;
+  }
+  .hero h1 { color: #fff; font-size: 40px; letter-spacing: -.02em; max-width: 640px; }
+  .hero p { color: rgba(255,255,255,.88); font-size: 18px; max-width: 560px; }
+  .hero .cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+  .hero-badges { display:flex; gap:22px; margin-top: 34px; flex-wrap: wrap; }
+  .hero-badge { display:flex; align-items:center; gap:10px; color:#fff; font-size:14.5px; font-weight:600; }
+  .hero-badge .ic { width:34px; height:34px; border-radius:9px; background:rgba(255,255,255,.14); display:grid; place-items:center; font-size:19px; color:#fff; }
+  .feat-ic { width:48px; height:48px; border-radius:12px; background:var(--brand-50); border:1px solid var(--brand-100); display:grid; place-items:center; font-size:24px; color:var(--brand-700); margin-bottom:14px; }
+
+  /* Cards grid */
+  .grid { display: grid; gap: 20px; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm); padding: 22px; transition: .18s ease;
+  }
+  .card.hoverable { cursor: pointer; }
+  .card.hoverable:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); border-color: var(--brand-100); }
+
+  .prod-card .p-ic {
+    width: 48px; height: 48px; border-radius: 12px; font-size: 24px; color: var(--brand-700);
+    display: grid; place-items: center; margin-bottom: 16px;
+    background: var(--brand-50); border: 1px solid var(--brand-100);
+  }
+  .prod-card h3 { font-size: 18px; }
+  .prod-card p { font-size: 14px; margin-bottom: 16px; }
+  .prod-card .p-foot { display: flex; align-items: center; justify-content: space-between; }
+  .p-from { font-size: 13px; color: var(--ink-500); }
+  .p-from b { color: var(--brand-700); font-size: 15px; font-weight: 700; }
+  .p-link { font-size: 14px; font-weight: 600; color: var(--brand-600); }
+  .prod-card:hover .p-link { text-decoration: underline; }
+
+  .eyebrow { color: var(--accent-dark); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .section-head { text-align: center; max-width: 620px; margin: 0 auto 34px; }
+  .section-head h2 { font-size: 30px; }
+  .section-head p { font-size: 16px; }
+
+  /* Product detail */
+  .prod-hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 36px; align-items: start; }
+  .prod-hero .p-ic-lg { width: 64px; height:64px; font-size: 32px; color: var(--brand-700); border-radius: 16px; display:grid; place-items:center; background: var(--brand-50); border:1px solid var(--brand-100); margin-bottom: 18px; }
+  .feature-list { list-style: none; padding: 0; margin: 18px 0; }
+  .feature-list li { display: flex; gap: 10px; padding: 8px 0; color: var(--ink-700); font-size: 15px; align-items:flex-start; }
+  .feature-list li .chk { color: var(--ok); font-size: 17px; flex: 0 0 auto; line-height: 1.4; }
+
+  .quote-box { position: sticky; top: 90px; }
+
+  /* Forms */
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-weight: 600; font-size: 13.5px; color: var(--ink-700); margin-bottom: 6px; }
+  .field .req { color: var(--danger); }
+  .input, .select, textarea.input {
+    width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font-family: inherit; font-size: 15px; color: var(--ink-900); background: #fff; transition: .15s;
+  }
+  .input:focus, .select:focus, textarea.input:focus { outline: none; border-color: var(--brand-500); box-shadow: 0 0 0 3px var(--brand-100); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .hint { font-size: 12.5px; color: var(--ink-500); margin-top: 5px; }
+  .prefill-note {
+    display:flex; align-items:center; gap:8px;
+    background: var(--brand-50); border:1px solid var(--brand-100); color: var(--brand-700);
+    padding: 9px 12px; border-radius: var(--radius-sm); font-size: 13px; font-weight:600; margin-bottom: 16px;
+  }
+
+  /* Account dashboard */
+  .acc-head { display:flex; align-items:center; justify-content:space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 26px; }
+  .acc-greeting h2 { font-size: 26px; margin-bottom: 2px; }
+  .acc-greeting p { margin: 0; }
+  .stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+  .stat {
+    background:#fff; border:1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm);
+  }
+  .stat .s-label { font-size: 12.5px; color: var(--ink-500); font-weight: 600; text-transform: uppercase; letter-spacing:.03em; }
+  .stat .s-val { font-size: 26px; font-weight: 800; color: var(--brand-800); margin-top: 4px; }
+  .stat .s-sub { font-size: 12.5px; margin-top: 2px; }
+
+  .policy {
+    display:flex; align-items:center; gap: 16px; padding: 16px; border:1px solid var(--line);
+    border-radius: var(--radius-sm); background:#fff; margin-bottom: 12px;
+  }
+  .policy .p-ic2 { width:46px; height:46px; border-radius: 11px; background: var(--brand-50); border:1px solid var(--brand-100); display:grid; place-items:center; font-size:22px; flex:0 0 auto; }
+  .policy .p-info { flex: 1; min-width: 0; }
+  .policy .p-info h4 { margin: 0 0 3px; font-size: 15.5px; }
+  .policy .p-info .p-meta { font-size: 13px; color: var(--ink-500); }
+  .policy .p-actions { display:flex; gap:8px; flex-wrap: wrap; }
+
+  .alert {
+    display:flex; align-items:flex-start; gap: 12px; padding: 14px 16px; border-radius: var(--radius-sm);
+    margin-bottom: 12px; border: 1px solid; font-size: 14px;
+  }
+  .alert .a-ic { font-size: 20px; flex:0 0 auto; }
+  .alert .a-body { flex: 1; }
+  .alert .a-body h4 { margin: 0 0 2px; font-size: 15px; }
+  .alert .a-body p { margin: 0; font-size: 13.5px; }
+  .alert.warn { background: var(--warn-bg); border-color: #f2d9a8; color: #7a4d00; }
+  .alert.warn h4 { color: #7a4d00; }
+  .alert.danger { background: var(--danger-bg); border-color: #f2c0c0; color: #a02c2c; }
+  .alert.danger h4 { color: #a02c2c; }
+  .alert.info { background: var(--brand-50); border-color: var(--brand-100); color: var(--brand-700); }
+  .alert .a-actions { display:flex; gap: 8px; align-items:center; }
+
+  .subgrid { display:grid; grid-template-columns: 1.5fr 1fr; gap: 22px; align-items:start; }
+  .panel-title { display:flex; align-items:center; justify-content: space-between; margin-bottom: 14px; }
+  .panel-title h3 { font-size: 18px; margin: 0; }
+
+  /* Login modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(10,37,64,.55); backdrop-filter: blur(3px);
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 18px; box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 420px; overflow: hidden; animation: pop .22s ease;
+  }
+  @keyframes pop { from { opacity:0; transform: scale(.96) translateY(8px);} to {opacity:1; transform:none;} }
+  .modal-head { background: linear-gradient(135deg, var(--brand-800), var(--brand-600)); color:#fff; padding: 28px 24px; text-align:center; }
+  .modal-head h3 { color:#fff; font-size: 20px; margin: 0 0 4px; }
+  .modal-head p { color: rgba(255,255,255,.85); margin: 0; font-size: 13.5px; }
+  .modal-body { padding: 24px; }
+  .modal-foot { padding: 0 24px 22px; text-align:center; font-size: 12.5px; color: var(--ink-500); }
+  .modal-close { position:absolute; top:14px; right:16px; background:none; border:none; color:#fff; font-size:26px; cursor:pointer; line-height:1; opacity:.85; }
+  .modal-close:hover { opacity: 1; }
+  .modal-wrap { position: relative; }
+
+  /* Toast */
+  .toast-wrap { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 200; display:flex; flex-direction: column; gap: 10px; align-items:center; }
+  .toast {
+    background: var(--ink-900); color:#fff; padding: 13px 20px; border-radius: 12px;
+    box-shadow: var(--shadow-lg); font-size: 14px; font-weight: 600; display:flex; align-items:center; gap: 10px;
+    animation: toastIn .3s ease; max-width: 92vw;
+  }
+  .toast.ok { background: #14713a; }
+  .toast.info { background: var(--brand-700); }
+  @keyframes toastIn { from { opacity:0; transform: translateY(12px);} to {opacity:1; transform:none;} }
+
+  /* Footer */
+  footer.site {
+    background: var(--brand-900); color: rgba(255,255,255,.75); margin-top: 50px; padding: 44px 0 28px;
+  }
+  footer.site .f-grid { display:grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+  footer.site h4 { color:#fff; font-size: 14px; text-transform: uppercase; letter-spacing:.05em; margin-bottom: 12px; }
+  footer.site a { color: rgba(255,255,255,.72); display:block; padding: 4px 0; font-size: 14px; cursor:pointer; }
+  footer.site a:hover { color:#fff; text-decoration:none; }
+  footer.site .f-brand .name { color:#fff; font-weight: 800; font-size: 18px; margin-bottom: 8px; }
+  footer.site .f-brand .name span { color: var(--accent); }
+  footer.site .f-brand p { color: rgba(255,255,255,.6); font-size: 13.5px; }
+  footer.site .f-bottom { border-top: 1px solid rgba(255,255,255,.12); padding-top: 18px; font-size: 12.5px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+
+  .breadcrumb { font-size: 13px; color: var(--ink-500); margin-bottom: 16px; }
+  .breadcrumb a { cursor:pointer; }
+
+  /* Trust strip */
+  .trust { background:#fff; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .trust-row { display:flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; padding: 26px 0; text-align:center; }
+  .trust-item .t-num { font-size: 26px; font-weight: 800; color: var(--brand-700); }
+  .trust-item .t-lab { font-size: 13px; color: var(--ink-500); }
+
+  @media (max-width: 900px) {
+    .grid-3, .grid-4 { grid-template-columns: repeat(2,1fr); }
+    .prod-hero { grid-template-columns: 1fr; }
+    .subgrid { grid-template-columns: 1fr; }
+    .stat-row { grid-template-columns: repeat(2,1fr); }
+    footer.site .f-grid { grid-template-columns: 1fr 1fr; }
+    .quote-box { position: static; }
+  }
+  @media (max-width: 640px) {
+    .nav-links { display:none; }
+    .grid-3, .grid-4, .grid-2 { grid-template-columns: 1fr; }
+    .stat-row { grid-template-columns: 1fr 1fr; }
+    .hero h1 { font-size: 30px; }
+    .field-row { grid-template-columns: 1fr; }
+    .user-meta { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="site">
+  <div class="container">
+    <nav class="nav">
+      <div class="brand" onclick="go('home')">
+        <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 4 5.5v5.2c0 4.7 3.2 8.3 8 10.3 4.8-2 8-5.6 8-10.3V5.5L12 2.5Z"/><path d="M9 11.5l2.2 2.2L15.5 9"/></svg>
+        <div class="name">Mobven <span>Sigorta</span></div>
+      </div>
+      <div class="nav-links" id="navLinks">
+        <a data-nav="home" onclick="go('home')">Ana Sayfa</a>
+        <a data-nav="urunler" onclick="go('urunler')">Ürünler</a>
+        <a data-nav="teklif" onclick="go('teklif')">Teklif Al</a>
+        <a data-nav="hesabim" onclick="go('hesabim')" id="navHesabim" style="display:none;">Hesabım</a>
+      </div>
+      <div class="nav-spacer"></div>
+      <div class="nav-user" id="navUser">
+        <!-- doldurulacak -->
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ HOME ============ -->
+<section class="page active" id="page-home">
+  <div class="hero">
+    <div class="container">
+      <h1>İhtiyacınıza uygun sigorta, tek bir yerden.</h1>
+      <p>Kasko, trafik, konut, sağlık, ferdi kaza ve bireysel emeklilik ürünlerinde teklif alın; poliçelerinizi tek panelden yönetin.</p>
+      <div class="cta-row">
+        <a class="btn btn-accent" onclick="go('teklif')">Teklif Al</a>
+        <a class="btn btn-light" onclick="go('urunler')">Ürünleri İncele</a>
+      </div>
+      <div class="hero-badges">
+        <div class="hero-badge"><span class="ic" data-ico="bolt"></span> Dakikalar içinde teklif</div>
+        <div class="hero-badge"><span class="ic" data-ico="shield"></span> Kapsamlı teminatlar</div>
+        <div class="hero-badge"><span class="ic" data-ico="headset"></span> 7/24 hasar desteği</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trust">
+    <div class="container">
+      <div class="trust-row">
+        <div class="trust-item"><div class="t-num">6</div><div class="t-lab">Sigorta ürünü</div></div>
+        <div class="trust-item"><div class="t-num">7/24</div><div class="t-lab">Hasar hattı</div></div>
+        <div class="trust-item"><div class="t-num">Online</div><div class="t-lab">Poliçe yönetimi</div></div>
+        <div class="trust-item"><div class="t-num">KVKK</div><div class="t-lab">Veri güvenliği</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Ürünlerimiz</div>
+        <h2>Size en uygun sigortayı seçin</h2>
+        <p>İhtiyacınıza göre tasarlanmış geniş ürün yelpazesiyle her an güvendesiniz.</p>
+      </div>
+      <div class="grid grid-3" id="homeProducts"></div>
+    </div>
+  </div>
+
+  <div class="section" style="background:#fff; border-top:1px solid var(--line);">
+    <div class="container">
+      <div class="section-head">
+        <div class="eyebrow">Neden Mobven Sigorta?</div>
+        <h2>Dijital, hızlı ve yanınızda</h2>
+      </div>
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="feat-ic"><span class="ic" data-ico="bolt"></span></div>
+          <h3>Hızlı teklif</h3>
+          <p>Birkaç bilgiyle kişiye özel fiyat teklifinizi kısa sürede alın.</p>
+        </div>
+        <div class="card">
+          <div class="feat-ic"><span class="ic" data-ico="screen"></span></div>
+          <h3>Tek ekrandan yönetim</h3>
+          <p>Poliçeleriniz, ödemeleriniz ve hasar dosyalarınız tek panelde toplanır.</p>
+        </div>
+        <div class="card">
+          <div class="feat-ic"><span class="ic" data-ico="headset"></span></div>
+          <h3>Gerçek destek</h3>
+          <p>İhtiyaç anında uzman ekibimize telefon ve dijital kanallardan ulaşırsınız.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ÜRÜNLER (liste) ============ -->
+<section class="page" id="page-urunler">
+  <div class="section">
+    <div class="container">
+      <div class="breadcrumb"><a onclick="go('home')">Ana Sayfa</a> / Ürünler</div>
+      <div class="section-head" style="text-align:left; margin-left:0;">
+        <div class="eyebrow">Tüm Ürünler</div>
+        <h2>İhtiyacınıza uygun güvenceyi seçin</h2>
+      </div>
+      <div class="grid grid-3" id="allProducts"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ÜRÜN DETAY ============ -->
+<section class="page" id="page-urun-detay">
+  <div class="section">
+    <div class="container" id="prodDetailContainer">
+      <!-- doldurulacak -->
+    </div>
+  </div>
+</section>
+
+<!-- ============ TEKLİF AL ============ -->
+<section class="page" id="page-teklif">
+  <div class="section">
+    <div class="container" style="max-width: 720px;">
+      <div class="breadcrumb"><a onclick="go('home')">Ana Sayfa</a> / Teklif Al</div>
+      <div class="section-head" style="text-align:left; margin-left:0; margin-bottom: 24px;">
+        <div class="eyebrow">Ücretsiz Teklif</div>
+        <h2 id="teklifTitle">Hızlı teklif alın</h2>
+        <p id="teklifSub">Birkaç bilgiyle size özel fiyatı hemen görün. Üyelik gerekmez.</p>
+      </div>
+      <div class="card" style="padding: 28px;">
+        <div id="teklifPrefill"></div>
+        <form id="teklifForm" onsubmit="submitTeklif(event)">
+          <div class="field">
+            <label>Sigorta Ürünü <span class="req">*</span></label>
+            <select class="select" id="tf_urun" required>
+              <option value="">Ürün seçiniz…</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Ad Soyad <span class="req">*</span></label>
+              <input class="input" id="tf_ad" required placeholder="Adınız Soyadınız" />
+            </div>
+            <div class="field">
+              <label>Telefon <span class="req">*</span></label>
+              <input class="input" id="tf_tel" required placeholder="05XX XXX XX XX" />
+            </div>
+          </div>
+          <div class="field">
+            <label>E-posta <span class="req">*</span></label>
+            <input class="input" id="tf_email" type="email" required placeholder="ornek@eposta.com" />
+          </div>
+          <div class="field" id="tf_extra_wrap">
+            <label id="tf_extra_label">Ek Bilgi</label>
+            <input class="input" id="tf_extra" placeholder="" />
+          </div>
+          <div class="field">
+            <label>Not (opsiyonel)</label>
+            <textarea class="input" id="tf_not" rows="2" placeholder="Eklemek istediğiniz bir şey var mı?"></textarea>
+          </div>
+          <button type="submit" class="btn btn-accent btn-block" style="margin-top:6px;">Teklifimi Hesapla</button>
+          <p class="hint" style="text-align:center; margin-top:12px;">Bilgileriniz KVKK kapsamında güvende. Formu göndererek iletişim kurulmasına onay verirsiniz.</p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HESABIM ============ -->
+<section class="page" id="page-hesabim">
+  <div class="section">
+    <div class="container" id="hesabimContainer">
+      <!-- doldurulacak (login gerektirir) -->
+    </div>
+  </div>
+</section>
+
+<!-- ============ TEŞEKKÜR / SONUÇ ============ -->
+<section class="page" id="page-sonuc">
+  <div class="section">
+    <div class="container" style="max-width:620px; text-align:center; padding-top: 30px;" id="sonucContainer">
+    </div>
+  </div>
+</section>
+
+<!-- ============ KAMPANYA LİNK ÜRETECİ (gizli: #kampanya) ============ -->
+<section class="page" id="page-kampanya">
+  <div class="section">
+    <div class="container" style="max-width: 860px;" id="kampanyaContainer">
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site">
+  <div class="container">
+    <div class="f-grid">
+      <div class="f-brand">
+        <div class="name">Mobven <span>Sigorta</span></div>
+        <p>Dijital sigortacılığın güvenilir adresi. Hayatın her anında yanınızdayız.</p>
+      </div>
+      <div>
+        <h4>Ürünler</h4>
+        <a onclick="go('urunler')">Kasko</a>
+        <a onclick="go('urunler')">Trafik Sigortası</a>
+        <a onclick="go('urunler')">Konut / DASK</a>
+        <a onclick="go('urunler')">Sağlık Sigortası</a>
+      </div>
+      <div>
+        <h4>Kurumsal</h4>
+        <a onclick="go('home')">Hakkımızda</a>
+        <a onclick="go('home')">İletişim</a>
+        <a onclick="go('home')">Kariyer</a>
+        <a onclick="go('home')">Blog</a>
+      </div>
+      <div>
+        <h4>Destek</h4>
+        <a onclick="go('teklif')">Teklif Al</a>
+        <a onclick="requireLoginThen('hesabim')">Hesabım</a>
+        <a onclick="go('home')">Hasar Bildirimi</a>
+        <a onclick="go('home')">S.S.S.</a>
+      </div>
+    </div>
+    <div class="f-bottom">
+      <div>© 2026 Mobven Sigorta A.Ş. — Tüm hakları saklıdır.</div>
+      <div>KVKK · Çerez Politikası · Gizlilik</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ LOGIN MODAL ============ -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <div class="modal-wrap">
+      <button class="modal-close" onclick="closeLogin()">×</button>
+      <div class="modal-head">
+        <h3>Hesabınıza giriş yapın</h3>
+        <p>Poliçelerinizi görüntüleyin ve yönetin</p>
+      </div>
+    </div>
+    <div class="modal-body">
+      <form onsubmit="doLogin(event)">
+        <div class="field">
+          <label>E-posta</label>
+          <input class="input" id="login_email" type="email" required placeholder="ornek@eposta.com" />
+        </div>
+        <div class="field">
+          <label>Şifre</label>
+          <input class="input" id="login_pass" type="password" placeholder="••••••••" />
+          <div class="hint">Demo ortamı — herhangi bir e-posta ile giriş yapabilirsiniz.</div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Giriş Yap</button>
+      </form>
+    </div>
+    <div class="modal-foot">
+      Hesabınız yok mu? <a onclick="closeLogin(); go('teklif')">Teklif alın</a> — anında müşteri olun.
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* =========================================================================
+   MOBVEN SİGORTA — MÜŞTERİ PORTALI (STATİK DEMO)
+   -------------------------------------------------------------------------
+   Bu dosya CI / Journeys trigger'larını tetiklemek üzere tasarlanmıştır.
+   Her müşteri eylemi bir TRIGGER PLACEHOLDER fonksiyonu çağırır (aşağıda).
+   Journey modülünde üretilen trigger kod bloğu, ilgili fonksiyonun içine
+   gömülecektir. Şu an fonksiyonlar boştur; UI akışı bağımsız çalışır.
+   ========================================================================= */
+
+/* ---------- Uygulama Durumu (State) ---------- */
+const App = {
+  isLoggedIn: false,
+  contact: null,       // login sonrası müşteri (Contact) verisi
+  visitorId: null,     // anonim ziyaretçi kimliği (login yoksa)
+  currentProduct: null,
+  teklifGonderildi: false, // teklif formu tamamlandı mı (abandonment kontrolü)
+  utm: null                // yakalanan kampanya kaynağı (utm_source, utm_campaign...)
+};
+
+/* Anonim ziyaretçi kimliği (login olmayan kullanıcı için) */
+function ensureVisitorId() {
+  if (!App.visitorId) {
+    App.visitorId = 'visitor_' + Math.random().toString(36).slice(2, 10);
+  }
+  return App.visitorId;
+}
+
+/* =========================================================================
+   UTM İZLEME (gelen kampanya kaynağı yakalama)
+   -------------------------------------------------------------------------
+   Portal açılınca URL'deki utm_* parametreleri okunur ve saklanır.
+   Bu değerler triggerContext() ile HER trigger payload'ına otomatik eklenir.
+   Örn. bir CI e-postasındaki linke tıklayan müşteri portala gelince,
+   "hangi kampanyadan geldiği" tüm event'lerde CI'a taşınır.
+   ========================================================================= */
+function captureUTM() {
+  var params = new URLSearchParams(window.location.search || '');
+  var keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+  var found = {};
+  var any = false;
+  keys.forEach(function(k){
+    var v = params.get(k);
+    if (v) { found[k] = v; any = true; }
+  });
+  if (any) {
+    // İlk gelen kampanya kaynağını oturum boyunca koru (ilk temas atfı)
+    App.utm = found;
+    try { window.sessionStorage && sessionStorage.setItem('mobven_utm', JSON.stringify(found)); } catch(e){}
+  } else {
+    // URL'de yoksa, oturumda daha önce yakalanmış UTM varsa onu kullan
+    try {
+      var saved = window.sessionStorage && sessionStorage.getItem('mobven_utm');
+      if (saved) App.utm = JSON.parse(saved);
+    } catch(e){}
+  }
+  return App.utm;
+}
+
+/* ---------- Ürün Kataloğu ---------- */
+const PRODUCTS = [
+  { key:'kasko',   ad:'Kasko Sigortası',        ic:'car', from:'450 ₺/ay',
+    ozet:'Aracınızı çarpma, çalınma, doğal afet ve daha fazlasına karşı kapsamlı güvence altına alır.',
+    ozellikler:['Çarpma, çarpışma ve devrilme teminatı','Hırsızlık ve yangın koruması','Cam, mini onarım ve yol yardımı','Anlaşmalı servis ağı'] },
+  { key:'trafik',  ad:'Trafik Sigortası',       ic:'road', from:'320 ₺/ay',
+    ozet:'Yasal zorunlu trafik sigortası. Üçüncü şahıslara verilen maddi ve bedeni zararları karşılar.',
+    ozellikler:['Zorunlu yasal teminat','Üçüncü şahıs maddi zarar','Bedeni zarar ve tedavi masrafları','Hızlı poliçe düzenleme'] },
+  { key:'konut',   ad:'Konut & DASK',           ic:'home', from:'180 ₺/ay',
+    ozet:'Evinizi deprem, yangın, hırsızlık ve su baskınına karşı korur. DASK dahil paketler.',
+    ozellikler:['Zorunlu deprem sigortası (DASK)','Yangın ve doğal afet teminatı','Hırsızlık ve cam kırılması','Eşya ve dekorasyon güvencesi'] },
+  { key:'saglik',  ad:'Tamamlayıcı Sağlık',     ic:'health', from:'540 ₺/ay',
+    ozet:'Özel hastanelerde SGK farkı olmadan tedavi. Yatarak ve ayakta tedavi teminatları.',
+    ozellikler:['Anlaşmalı özel hastane ağı','Yatarak ve ayakta tedavi','Doğum ve ameliyat teminatı','Online doktor görüşmesi'] },
+  { key:'ferdi',   ad:'Ferdi Kaza',             ic:'shield', from:'95 ₺/ay',
+    ozet:'Kaza sonucu oluşabilecek durumlara karşı siz ve sevdikleriniz için maddi güvence.',
+    ozellikler:['Vefat ve sürekli sakatlık teminatı','Tedavi masrafları','Günlük hastane tazminatı','Dünya çapında geçerlilik'] },
+  { key:'bes',     ad:'Bireysel Emeklilik (BES)',ic:'growth', from:'500 ₺/ay',
+    ozet:'Geleceğinizi bugünden planlayın. %30 devlet katkısı ile birikiminizi büyütün.',
+    ozellikler:['%30 devlet katkısı','Esnek katkı payı seçenekleri','Profesyonel fon yönetimi','Dilediğiniz zaman birikim takibi'] }
+];
+
+/* ---------- SVG İkon Kütüphanesi (stroke, currentColor) ---------- */
+const ICONS = {
+  car:    '<path d="M5 16v2m14-2v2M4 13h16M6.5 13l1-4.2A2 2 0 0 1 9.4 7h5.2a2 2 0 0 1 1.9 1.4L17.5 13M4 13v4h16v-4"/><circle cx="7.5" cy="15.5" r="1"/><circle cx="16.5" cy="15.5" r="1"/>',
+  road:   '<path d="M8 4 5 20M16 4l3 16M12 5v2m0 4v2m0 4v2"/>',
+  home:   '<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10.5V20h12v-9.5"/><path d="M10 20v-5h4v5"/>',
+  health: '<path d="M20 8.5c0 5-8 10-8 10s-8-5-8-10a4 4 0 0 1 7-2.6A4 4 0 0 1 20 8.5Z"/><path d="M9 11h2v-2h2v2h2m-6 0v0"/><path d="M8.5 11h2.2l.8-1.5 1 3 .8-1.5h2.2"/>',
+  shield: '<path d="M12 3 5 5.5v5C5 15 8 18 12 20c4-2 7-5 7-9.5v-5L12 3Z"/>',
+  growth: '<path d="M4 20h16M6 20v-6m4 6V9m4 11v-8m4 8V6"/>',
+  bolt:   '<path d="M13 3 5 13h5l-1 8 8-10h-5l1-8Z"/>',
+  screen: '<rect x="4" y="4" width="16" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/>',
+  headset:'<path d="M5 13v-1a7 7 0 0 1 14 0v1"/><path d="M5 13a2 2 0 0 1 2 2v2a2 2 0 0 1-4 0v-2M19 13a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2 3 3 0 0 0 3-3"/><path d="M19 19a4 4 0 0 1-4 3h-2"/>',
+  check:  '<path d="M4 12.5 9 17.5 20 6.5"/>',
+  phone:  '<path d="M6.5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2 2C11 22 4 15 4 6a2 2 0 0 1 2.5-2Z"/>',
+  alert:  '<path d="M12 4 2.5 20h19L12 4Z"/><path d="M12 10v4M12 17v.5"/>',
+  renew:  '<path d="M4 12a8 8 0 0 1 13.5-5.8L20 8M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-13.5 5.8L4 16M4 20v-4h4"/>',
+  file:   '<path d="M7 3h7l4 4v14H7V3Z"/><path d="M14 3v4h4M9.5 12h5M9.5 15.5h5"/>',
+  card:   '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M6.5 14.5h3"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/>',
+  lock:   '<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  user:   '<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
+  bell:   '<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  globe:  '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.5 2.5 13.5 0 16M12 4c-2.5 2.5-2.5 13.5 0 16"/>'
+};
+function icon(name, cls) {
+  const p = ICONS[name] || ICONS.file;
+  return '<svg class="ico ' + (cls||'') + '" viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>';
+}
+
+function productByKey(k){ return PRODUCTS.find(p => p.key === k); }
+
+/* ---------- Demo müşteri verisi (login sonrası oluşturulur) ---------- */
+/* Serbest giriş: girilen email'e göre jenerik ama zengin bir müşteri profili üretilir. */
+function buildDemoContact(email) {
+  const namePart = (email.split('@')[0] || 'Değerli Müşteri')
+      .replace(/[._-]/g,' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
+  return {
+    contactId: 'contact_' + Math.random().toString(36).slice(2,10),
+    ad: namePart,
+    email: email,
+    telefon: '0532 000 00 00',
+    musteriNo: 'MB-' + Math.floor(100000 + Math.random()*899999),
+    // Zengin demo verisi — trigger payload'larını beslemek için
+    policeler: [
+      { no:'KSK-2024-88123', urun:'kasko',  ad:'Kasko Sigortası',   plaka:'34 ABC 123', bitis:'12.09.2026', prim:'₺5.400', durum:'aktif',  yenilemeYakin:true },
+      { no:'KNT-2024-55210', urun:'konut',  ad:'Konut & DASK',      adres:'Kadıköy / İstanbul', bitis:'03.03.2027', prim:'₺2.160', durum:'aktif', yenilemeYakin:false },
+      { no:'SGL-2023-40877', urun:'saglik', ad:'Tamamlayıcı Sağlık',bitis:'28.11.2026', prim:'₺6.480', durum:'aktif', yenilemeYakin:false }
+    ],
+    gecikenTaksit: { police:'KSK-2024-88123', tutar:'₺450', vade:'10.08.2026', gunGecikme:8 },
+    acikHasar: null,   // başlangıçta açık hasar yok; kullanıcı hasar bildirebilir
+    aktifPoliceSayisi: 3,
+    toplamPrim: '₺14.040'
+  };
+}
+
+/* =========================================================================
+   ★★★  TRIGGER PLACEHOLDER FONKSİYONLARI  ★★★
+   Journey modülünde üretilen trigger kod blokları BU fonksiyonların içine
+   gömülecektir. Her fonksiyon standart bir "payload" hazırlar:
+     - isLoggedIn : true/false  → kişisel mi anonim mi trigger seçilecek
+     - contact    : login varsa müşteri (Contact) verisi, yoksa null
+     - visitorId  : login yoksa anonim ziyaretçi kimliği
+   -------------------------------------------------------------------------
+   NOT: Fonksiyonların içi şu an BOŞ. UI akışı bu fonksiyonlardan bağımsız
+   çalışır; buraya trigger kodu eklendiğinde CI/Journeys'e event gider.
+   ========================================================================= */
+
+function triggerContext(extra) {
+  var utm = App.utm || {};
+  return Object.assign({
+    isLoggedIn: App.isLoggedIn,
+    contact: App.isLoggedIn ? App.contact : null,
+    visitorId: App.isLoggedIn ? null : ensureVisitorId(),
+    zaman: new Date().toISOString(),
+    // UTM kaynağı — her trigger payload'ına otomatik eklenir
+    utm_source:   utm.utm_source   || '',
+    utm_medium:   utm.utm_medium   || '',
+    utm_campaign: utm.utm_campaign || '',
+    utm_content:  utm.utm_content  || ''
+  }, extra || {});
+}
+
+/* CI SDK yüklü ve hazır mı? Demo modunda (SDK yoksa) trigger'lar sessizce atlanır. */
+function ciReady() {
+  if (typeof window === "undefined") return false;
+  // CI Web İzleme loader'ı nesneyi window.MSCI olarak oluşturur.
+  // trigger fonksiyonları window.msdynmkt kullandığı için köprüle:
+  if (!window["msdynmkt"] && window["MSCI"]) {
+    window["msdynmkt"] = window["MSCI"];
+  }
+  return window["msdynmkt"]
+      && typeof window["msdynmkt"].trackEvent === "function";
+}
+
+/* --- 1) LOGIN --- */
+function onLogin(payload) {
+  if (!ciReady()) return;   // CI SDK yüklü değilse sessizce çık (demo modu)
+
+  // KİMLİK BİRLEŞTİRME (identity stitching):
+  // Login anında CI'a e-posta kimliğini bildiririz. CI, autoCapture ile bu
+  // tarayıcıda daha önce izlediği ANONİM gezinmeyi (ürün görüntüleme vb.)
+  // bu kimliğe bağlar → "anonim gezen kişi = Ahmet Yılmaz" birleşir.
+  window["msdynmkt"].setUser({ authId: payload.email });
+
+  // Giriş event'i (Hoş Geldin / oturum başlangıcı journey'i için)
+  window["msdynmkt"].trackEvent({
+    name: "msdynmkt_sigorta_giris",   // (opsiyonel) CI'da 'Sigorta - Giriş' trigger'ı açılırsa bağlanır
+    ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
+    version: "1.0.0",
+    properties: {
+      "bindingid":     payload.email || "",
+      "onceki_ziyaretci_id": payload.oncekiZiyaretciId || "",  // birleştirilen anonim ID
+      "utm_source":    payload.utm_source || "",
+      "utm_campaign":  payload.utm_campaign || ""
+    }
+  });
+}
+
+/* --- 2) ÜRÜN GÖRÜNTÜLEME (web davranışı) --- */
+/* CI-Journeys Tetikleyici: "Sigorta - Ürün Görüntüleme" (davranışsal ilgi sinyali)
+   isLoggedIn=false → anonim ürün ilgisi → lead-nurture journey
+   isLoggedIn=true  → mevcut müşteri çapraz-satış ilgisi
+   NOT: Sık tetiklenir → journey tarafında frequency cap (Senaryo 3) ile kullanılmalı. */
+function onUrunGoruntule(payload) {
+  if (!ciReady()) return;   // CI SDK yüklü değilse sessizce çık (demo modu)
+
+  var authId = payload.isLoggedIn && payload.contact
+      ? payload.contact.email
+      : payload.visitorId;
+
+  window["msdynmkt"].setUser({ authId: authId });
+  window["msdynmkt"].trackEvent({
+    name: "msdynmkt_b10551242f0e4fbe88bb7ae8fa47f794", // Tetikleyici: Sigorta - Ürün Görüntüleme
+    ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
+    version: "1.0.0",
+    properties: {
+      "bindingid":    authId || "",
+      "login_durumu": payload.isLoggedIn ? "login" : "anonim",
+      "urun":         payload.urun || "",
+      "urun_adi":     payload.urunAd || "",
+      "ziyaretci_id": payload.visitorId || "",
+      "utm_source":   payload.utm_source || "",
+      "utm_campaign": payload.utm_campaign || ""
+    }
+  });
+}
+
+/* --- 3) TEKLİF AL --- */
+/* CI-Journeys Tetikleyici: "Sigorta - Teklif Etkileşimi" (Senaryo 4 - Abandonment)
+   isLoggedIn=false → ANONİM ziyaretçi teklif talebi (lead yakalama journey)
+   isLoggedIn=true  → MEVCUT müşteri çapraz-satış teklif talebi (kişisel journey) */
+function onTeklifAl(payload) {
+  if (!ciReady()) return;   // CI SDK yüklü değilse sessizce çık (demo modu)
+
+  // Kimlik: login varsa e-posta, yoksa anonim ziyaretçi ID
+  var authId = payload.isLoggedIn && payload.contact
+      ? payload.contact.email
+      : payload.visitorId;
+
+  window["msdynmkt"].setUser({ authId: authId });
+  window["msdynmkt"].trackEvent({
+    name: "msdynmkt_d969a00dddb34bfda7b7166e463bce8d", // Tetikleyici: Sigorta - Teklif Etkileşimi
+    ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
+    version: "1.0.0",
+    properties: {
+      "bindingid":     authId || "",
+      "ek_bilgi":      payload.ekBilgi || "",
+      "login_durumu":  payload.isLoggedIn ? "login" : "anonim",
+      "tamamlandi":    payload.tamamlandi || "hayir",   // form gönderildiyse "evet", yarım bırakıldıysa "hayir"
+      "urun":          payload.urun || "",
+      "urun_adi":      payload.urunAd || "",
+      "ziyaretci_id":  payload.visitorId || "",
+      "utm_source":    payload.utm_source || "",
+      "utm_medium":    payload.utm_medium || "",
+      "utm_campaign":  payload.utm_campaign || ""
+    }
+  });
+}
+
+/* --- 4) HASAR BİLDİRİMİ --- */
+/* CI-Journeys Tetikleyici: "Sigorta - Hasar Bildirimi" (Senaryo 9 mantığı)
+   Müşteri hasar bildirir → gerçek-zamanlı "biz sizi dinliyoruz" + hasar süreci journey'i. */
+function onHasarBildir(payload) {
+  if (!ciReady()) return;   // CI SDK yüklü değilse sessizce çık (demo modu)
+
+  // Hasar bildirimi login gerektirir → kimlik e-posta üzerinden
+  var authId = payload.contact ? payload.contact.email : (payload.visitorId || "");
+
+  window["msdynmkt"].setUser({ authId: authId });
+  window["msdynmkt"].trackEvent({
+    name: "msdynmkt_sigorta_hasarbildirimi_092210388", // Tetikleyici: Sigorta - Hasar Bildirimi
+    ingestionKey: "9109cd3cfc884abdb8026d0442d43c74-54f97fce-fe77-44f7-bf06-0e27cea05760-7501",
+    version: "1.0.0",
+    properties: {
+      "aciklama":     payload.aciklama || "",
+      "bindingid":    authId,
+      "hasar_no":     payload.hasarNo || "",
+      "hasar_turu":   payload.hasarTuru || "",
+      "login_durumu": payload.isLoggedIn ? "login" : "anonim",
+      "police_no":    payload.police || "",
+      "urun":         payload.urun || "",
+      "utm_source":   payload.utm_source || "",
+      "utm_campaign": payload.utm_campaign || ""
+    }
+  });
+}
+
+/* --- 5) ÖDEME / GECİKEN TAKSİT --- */
+function onOdeme(payload) {
+  // payload = triggerContext({ police, tutar, taksit })
+  // >>> JOURNEY TRIGGER KODU BURAYA GÖMÜLECEK (ödeme teşekkür / hatırlatma) <<<
+}
+
+/* --- 6) POLİÇE YENİLEME --- */
+function onYenileme(payload) {
+  // payload = triggerContext({ police, urun, bitisTarihi })
+  // >>> JOURNEY TRIGGER KODU BURAYA GÖMÜLECEK (yenileme journey'i) <<<
+}
+
+/* =========================================================================
+   UI / NAVİGASYON
+   ========================================================================= */
+
+function go(page, opts) {
+  // Hesabım login gerektirir
+  if (page === 'hesabim' && !App.isLoggedIn) { openLogin('hesabim'); return; }
+
+  // Teklif sayfasından BAŞKA sayfaya geçilirken form yarım kaldıysa → Abandonment
+  var suankiSayfa = document.querySelector('.page.active');
+  if (suankiSayfa && suankiSayfa.id === 'page-teklif' && page !== 'teklif' && page !== 'sonuc') {
+    teklifAbandonmentKontrol();
+  }
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+
+  // nav aktif işareti
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const navEl = document.querySelector('.nav-links a[data-nav="'+page+'"]');
+  if (navEl) navEl.classList.add('active');
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (page === 'hesabim') renderHesabim();
+  if (page === 'teklif')  prepTeklifForm(opts && opts.urun);
+}
+
+function requireLoginThen(page) {
+  if (App.isLoggedIn) go(page); else openLogin(page);
+}
+
+/* ---------- Ürün kartlarını render et ---------- */
+function productCardHTML(p) {
+  return `
+    <div class="card hoverable prod-card" onclick="openProduct('${p.key}')">
+      <div class="p-ic">${icon(p.ic)}</div>
+      <h3>${p.ad}</h3>
+      <p>${p.ozet}</p>
+      <div class="p-foot">
+        <div class="p-from">Başlangıç <b>${p.from}</b></div>
+        <span class="p-link">İncele</span>
+      </div>
+    </div>`;
+}
+
+function renderProductGrids() {
+  const home = PRODUCTS.slice(0,6).map(productCardHTML).join('');
+  document.getElementById('homeProducts').innerHTML = home;
+  document.getElementById('allProducts').innerHTML = PRODUCTS.map(productCardHTML).join('');
+  // teklif ürün seçenekleri
+  const sel = document.getElementById('tf_urun');
+  sel.innerHTML = '<option value="">Ürün seçiniz…</option>' +
+    PRODUCTS.map(p => `<option value="${p.key}">${p.ad}</option>`).join('');
+}
+
+/* ---------- Ürün detay ---------- */
+function openProduct(key) {
+  const p = productByKey(key);
+  if (!p) return;
+  App.currentProduct = key;
+
+  // TRIGGER: ürün görüntüleme (web davranış sinyali)
+  onUrunGoruntule(triggerContext({ urun: key, urunAd: p.ad }));
+
+  const c = document.getElementById('prodDetailContainer');
+  c.innerHTML = `
+    <div class="breadcrumb"><a onclick="go('home')">Ana Sayfa</a> / <a onclick="go('urunler')">Ürünler</a> / ${p.ad}</div>
+    <div class="prod-hero">
+      <div>
+        <div class="p-ic-lg">${icon(p.ic)}</div>
+        <div class="eyebrow">Sigorta Ürünü</div>
+        <h2 style="font-size:30px;">${p.ad}</h2>
+        <p style="font-size:16.5px;">${p.ozet}</p>
+        <ul class="feature-list">
+          ${p.ozellikler.map(o => `<li><span class="chk">${icon('check')}</span> ${o}</li>`).join('')}
+        </ul>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
+          <a class="btn btn-accent" onclick="go('teklif', {urun:'${p.key}'})">Bu Ürün İçin Teklif Al</a>
+          <a class="btn btn-light" onclick="go('urunler')">Diğer Ürünler</a>
+        </div>
+      </div>
+      <div class="quote-box">
+        <div class="card" style="padding:24px; border-top:3px solid var(--accent);">
+          <div class="p-from" style="margin-bottom:4px;">Başlangıç fiyatı</div>
+          <div style="font-size:32px; font-weight:800; color:var(--brand-800); margin-bottom:4px;">${p.from}</div>
+          <p style="font-size:13px; color:var(--ink-500);">Size özel fiyat, ihtiyaçlarınıza göre hesaplanır.</p>
+          <button class="btn btn-primary btn-block" onclick="go('teklif', {urun:'${p.key}'})" style="margin-top:8px;">Ücretsiz Teklif Al</button>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:14px; font-size:12.5px; color:var(--ink-500); justify-content:center;">
+            <span>Hızlı sonuç</span> · <span>KVKK güvenli</span> · <span>Üyeliksiz</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  go('urun-detay');
+}
+
+/* ---------- Teklif formu hazırlığı ---------- */
+function prepTeklifForm(urunKey) {
+  App.teklifGonderildi = false;   // yeni teklif başlıyor → abandonment bayrağını sıfırla
+  const sel = document.getElementById('tf_urun');
+  if (urunKey) sel.value = urunKey;
+
+  const prefill = document.getElementById('teklifPrefill');
+  const title = document.getElementById('teklifTitle');
+  const sub   = document.getElementById('teklifSub');
+
+  if (App.isLoggedIn && App.contact) {
+    // login: formu ön-doldur, kişisel çapraz-satış mesajı
+    document.getElementById('tf_ad').value    = App.contact.ad;
+    document.getElementById('tf_email').value = App.contact.email;
+    document.getElementById('tf_tel').value   = App.contact.telefon;
+    title.textContent = 'Size özel çapraz-satış teklifi';
+    sub.textContent   = 'Mevcut müşterimiz olduğunuz için bilgileriniz hazır. Sadece ürünü seçin.';
+    prefill.innerHTML = `<div class="prefill-note">${icon('user')} ${App.contact.ad} olarak giriş yaptınız — bilgileriniz hazır olarak dolduruldu.</div>`;
+  } else {
+    // anonim: lead yakalama
+    title.textContent = 'Hızlı teklif alın';
+    sub.textContent   = 'Birkaç bilgiyle size özel fiyatı hemen görün. Üyelik gerekmez.';
+    prefill.innerHTML = '';
+  }
+  updateExtraField();
+  sel.onchange = updateExtraField;
+}
+
+/* ürün türüne göre ek alan (ör. kasko → plaka) */
+function updateExtraField() {
+  const key = document.getElementById('tf_urun').value;
+  const wrap = document.getElementById('tf_extra_wrap');
+  const label = document.getElementById('tf_extra_label');
+  const input = document.getElementById('tf_extra');
+  const map = {
+    kasko:  ['Plaka', '34 ABC 123'],
+    trafik: ['Plaka', '34 ABC 123'],
+    konut:  ['İl / İlçe', 'Kadıköy / İstanbul'],
+    saglik: ['Doğum Yılı', '1988'],
+    ferdi:  ['Meslek', 'Örn: Mühendis'],
+    bes:    ['Aylık Katkı Payı', 'Örn: ₺750']
+  };
+  if (map[key]) {
+    wrap.style.display = 'block';
+    label.textContent = map[key][0];
+    input.placeholder = map[key][1];
+    input.value = '';   // ürün değişince önceki ek bilgiyi temizle
+  } else {
+    wrap.style.display = 'none';
+    input.value = '';
+  }
+}
+
+/* ---------- Teklif gönder ---------- */
+function submitTeklif(e) {
+  e.preventDefault();
+  const urunKey = document.getElementById('tf_urun').value;
+  const urun = productByKey(urunKey);
+  const payload = triggerContext({
+    urun: urunKey,
+    urunAd: urun ? urun.ad : '',
+    ad: document.getElementById('tf_ad').value.trim(),
+    telefon: document.getElementById('tf_tel').value.trim(),
+    email: document.getElementById('tf_email').value.trim(),
+    ekBilgi: document.getElementById('tf_extra').value.trim(),
+    not: document.getElementById('tf_not').value.trim(),
+    tamamlandi: 'evet'   // form gönderildi → teklif tamamlandı
+  });
+
+  // TRIGGER: teklif talebi (login → kişisel / anonim → lead)
+  App.teklifGonderildi = true;   // abandonment kontrolü için: form tamamlandı
+  onTeklifAl(payload);
+
+  // Sonuç ekranı
+  showSonuc({
+    ic: 'check',
+    baslik: 'Teklif talebiniz alındı',
+    mesaj: App.isLoggedIn
+      ? `Sayın ${payload.ad}, <b>${payload.urunAd}</b> için size özel teklifiniz hazırlanıyor. Müşteri temsilciniz kısa süre içinde sizinle iletişime geçecek.`
+      : `Sayın ${payload.ad}, <b>${payload.urunAd}</b> için teklifiniz hazırlanıyor. Belirttiğiniz numaradan en kısa sürede sizi arayacağız.`,
+    turBadge: null
+  });
+}
+
+/* ---------- Teklif Abandonment (yarım bırakma) kontrolü ----------
+   Senaryo 4: Müşteri ürünü seçip formu tamamlamadan sayfadan ayrılırsa,
+   tamamlandi="hayir" ile "Sigorta - Teklif Etkileşimi" trigger'ı tetiklenir.
+   Journey tarafında 1 saat beklenip WhatsApp/SMS hatırlatması gönderilir. */
+function teklifAbandonmentKontrol() {
+  if (App.teklifGonderildi) return;   // zaten tamamlanmış, abandonment yok
+  var urunKey = (document.getElementById('tf_urun') || {}).value || '';
+  var ad      = (document.getElementById('tf_ad')  || {}).value || '';
+  // En az ürün seçilmiş veya isim yazılmışsa "gerçek ilgi" say → abandonment gönder
+  if (!urunKey && !ad.trim()) return;
+
+  var urun = productByKey(urunKey);
+  var payload = triggerContext({
+    urun: urunKey,
+    urunAd: urun ? urun.ad : '',
+    ad: ad.trim(),
+    telefon: (document.getElementById('tf_tel')  || {}).value || '',
+    email:   (document.getElementById('tf_email')|| {}).value || '',
+    ekBilgi: (document.getElementById('tf_extra')|| {}).value || '',
+    not: '',
+    tamamlandi: 'hayir'   // form yarım bırakıldı → Abandonment
+  });
+  onTeklifAl(payload);
+}
+
+/* =========================================================================
+   KAMPANYA LİNK ÜRETECİ (gizli #kampanya sayfası)
+   -------------------------------------------------------------------------
+   Pazarlamacının aracı: farklı kaynaklar için UTM'li portal linkleri üretir.
+   Bu linke tıklayan ziyaretçi portala gelince captureUTM() kaynağı yakalar
+   ve tüm trigger event'lerine ekler → CI'da "hangi kampanyadan geldi" görünür.
+   ========================================================================= */
+var KAMPANYA_KAYNAKLARI = [
+  { key:'instagram', ad:'Instagram Reklamı', source:'instagram', medium:'paid_social',  campaign:'kasko_yaz_2026' },
+  { key:'google',    ad:'Google Ads',        source:'google',    medium:'cpc',          campaign:'kasko_arama' },
+  { key:'email',     ad:'E-posta Kampanyası',source:'mobven_email', medium:'email',     campaign:'yenileme_hatirlatma' },
+  { key:'sms',       ad:'SMS Kampanyası',    source:'mobven_sms', medium:'sms',          campaign:'capraz_satis_bes' }
+];
+
+function kampanyaLinkUret(k) {
+  // Portalın kendi kök URL'i (dosya/host bağımsız) + UTM parametreleri
+  var base = window.location.origin + window.location.pathname;
+  var qs = 'utm_source=' + encodeURIComponent(k.source) +
+           '&utm_medium=' + encodeURIComponent(k.medium) +
+           '&utm_campaign=' + encodeURIComponent(k.campaign);
+  return base + '?' + qs;
+}
+
+function renderKampanya() {
+  var c = document.getElementById('kampanyaContainer');
+  if (!c) return;
+  var rows = KAMPANYA_KAYNAKLARI.map(function(k){
+    var link = kampanyaLinkUret(k);
+    return '' +
+      '<div class="card" style="padding:18px; margin-bottom:14px;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">' +
+          '<div>' +
+            '<div style="font-weight:700; font-size:15.5px;">' + k.ad + '</div>' +
+            '<div style="font-size:12.5px; color:var(--ink-500); margin-top:2px;">source: <b>'+k.source+'</b> · medium: '+k.medium+' · campaign: '+k.campaign+'</div>' +
+          '</div>' +
+          '<button class="btn btn-light btn-sm" onclick="kampanyaKopyala(this,\''+k.key+'\')">Linki Kopyala</button>' +
+        '</div>' +
+        '<input class="input" readonly value="'+link+'" onclick="this.select()" style="margin-top:12px; font-size:12.5px; color:var(--ink-700);" />' +
+        '<div style="margin-top:10px;"><a class="btn btn-accent btn-sm" href="'+link+'">Bu Kaynakla Portalı Aç</a></div>' +
+      '</div>';
+  }).join('');
+
+  var aktifUtm = App.utm ? ('<div class="prefill-note" style="margin-bottom:18px;">'+icon('check')+' Şu an aktif kampanya kaynağı: <b>'+(App.utm.utm_source||'-')+'</b> / '+(App.utm.utm_campaign||'-')+' — bu değerler tüm event\'lere ekleniyor.</div>') :
+      '<div class="hint" style="margin-bottom:18px;">Şu an bir UTM kaynağı yakalanmadı. Aşağıdaki bir linkle portalı açtığınızda kaynak yakalanır.</div>';
+
+  c.innerHTML =
+    '<div class="breadcrumb"><a onclick="go(\'home\')">Ana Sayfa</a> / Kampanya Araçları</div>' +
+    '<div class="section-head" style="text-align:left; margin-left:0; margin-bottom:18px;">' +
+      '<div class="eyebrow">Kampanya Araçları · İç Kullanım</div>' +
+      '<h2 style="font-size:28px;">UTM Kampanya Link Üreteci</h2>' +
+      '<p>Her kaynak için izlenebilir portal linki üretin. Bu linke tıklayan ziyaretçinin kaynağı, portaldaki tüm CI event\'lerine (teklif, ürün görüntüleme, hasar) otomatik eklenir.</p>' +
+    '</div>' +
+    aktifUtm +
+    rows;
+}
+
+function kampanyaKopyala(btn, key) {
+  var k = KAMPANYA_KAYNAKLARI.find(function(x){ return x.key === key; });
+  if (!k) return;
+  var link = kampanyaLinkUret(k);
+  try {
+    navigator.clipboard.writeText(link);
+    var eski = btn.textContent; btn.textContent = 'Kopyalandı';
+    setTimeout(function(){ btn.textContent = eski; }, 1500);
+  } catch(e) {
+    toast('Link: ' + link, 'info');
+  }
+}
+
+/* ---------- Sonuç ekranı ---------- */
+function showSonuc({ic, baslik, mesaj, turBadge}) {
+  const c = document.getElementById('sonucContainer');
+  c.innerHTML = `
+    <div style="width:76px;height:76px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;font-size:34px;margin:0 auto 20px;">${icon(ic||'check')}</div>
+    <h2 style="font-size:26px;">${baslik}</h2>
+    <p style="font-size:16px;">${mesaj}</p>
+    ${turBadge ? `<div style="margin:16px 0;"><span class="badge badge-info">${turBadge}</span></div>` : ''}
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:20px;">
+      <a class="btn btn-primary" onclick="go('home')">Ana Sayfaya Dön</a>
+      <a class="btn btn-light" onclick="go('urunler')">Diğer Ürünlere Bak</a>
+    </div>`;
+  go('sonuc');
+}
+
+/* =========================================================================
+   LOGIN / LOGOUT
+   ========================================================================= */
+let _loginRedirect = null;
+
+function openLogin(redirect) {
+  _loginRedirect = redirect || null;
+  document.getElementById('loginModal').classList.add('open');
+  setTimeout(()=>document.getElementById('login_email').focus(), 100);
+}
+function closeLogin() {
+  document.getElementById('loginModal').classList.remove('open');
+}
+function doLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('login_email').value.trim();
+  if (!email) return;
+
+  // Login ÖNCESİ anonim ziyaretçi ID'yi sakla → kimlik birleştirme için
+  const oncekiZiyaretciId = App.visitorId || '';
+
+  App.isLoggedIn = true;
+  App.contact = buildDemoContact(email);
+
+  // TRIGGER: login yapan müşteri (kimlik birleştirme dahil)
+  onLogin(triggerContext({ email: email, oncekiZiyaretciId: oncekiZiyaretciId }));
+
+  App.visitorId = null;   // artık kimlik e-posta üzerinden
+
+  closeLogin();
+  renderUserArea();
+  toast('Hoş geldiniz, ' + App.contact.ad + '!', 'ok');
+
+  const dest = _loginRedirect || 'hesabim';
+  _loginRedirect = null;
+  go(dest);
+}
+function logout() {
+  App.isLoggedIn = false;
+  App.contact = null;
+  renderUserArea();
+  toast('Çıkış yapıldı. Görüşmek üzere!', 'info');
+  go('home');
+}
+
+/* header sağ kısım (login durumuna göre) */
+function renderUserArea() {
+  const box = document.getElementById('navUser');
+  const navHesabim = document.getElementById('navHesabim');
+  if (App.isLoggedIn && App.contact) {
+    const initials = App.contact.ad.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    box.innerHTML = `
+      <div class="user-meta" style="text-align:right;">
+        <div class="u-name">${App.contact.ad}</div>
+        <div class="u-sub">${App.contact.musteriNo}</div>
+      </div>
+      <div class="avatar" onclick="go('hesabim')" title="Hesabım">${initials}</div>
+      <button class="btn btn-light btn-sm" onclick="logout()">Çıkış</button>`;
+    navHesabim.style.display = '';
+  } else {
+    box.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="openLogin()">Giriş Yap</button>
+                     <button class="btn btn-primary btn-sm" onclick="go('teklif')">Teklif Al</button>`;
+    navHesabim.style.display = 'none';
+  }
+}
+
+/* =========================================================================
+   HESABIM PANELİ (login sonrası)
+   ========================================================================= */
+function renderHesabim() {
+  if (!App.isLoggedIn || !App.contact) { openLogin('hesabim'); return; }
+  const ct = App.contact;
+  const c = document.getElementById('hesabimContainer');
+
+  // uyarılar
+  let alerts = '';
+  if (ct.gecikenTaksit) {
+    alerts += `
+      <div class="alert danger">
+        <span class="a-ic">${icon('alert')}</span>
+        <div class="a-body">
+          <h4>Geciken taksit: ${ct.gecikenTaksit.tutar}</h4>
+          <p>${ct.gecikenTaksit.police} poliçenizin ${ct.gecikenTaksit.vade} vadeli taksiti ${ct.gecikenTaksit.gunGecikme} gündür ödenmedi.</p>
+        </div>
+        <div class="a-actions"><button class="btn btn-danger btn-sm" onclick="odemeYap('${ct.gecikenTaksit.police}','${ct.gecikenTaksit.tutar}')">Hemen Öde</button></div>
+      </div>`;
+  }
+  const yenilenecek = ct.policeler.filter(p => p.yenilemeYakin);
+  yenilenecek.forEach(p => {
+    alerts += `
+      <div class="alert warn">
+        <span class="a-ic">${icon('renew')}</span>
+        <div class="a-body">
+          <h4>Yenileme yaklaşıyor: ${p.ad}</h4>
+          <p>${p.no} poliçenizin bitiş tarihi ${p.bitis}. Kesintisiz güvence için şimdi yenileyin.</p>
+        </div>
+        <div class="a-actions"><button class="btn btn-primary btn-sm" onclick="yenile('${p.no}','${p.urun}','${p.bitis}')">Yenile</button></div>
+      </div>`;
+  });
+  if (ct.acikHasar) {
+    alerts += `
+      <div class="alert info">
+        <span class="a-ic">${icon('file')}</span>
+        <div class="a-body">
+          <h4>Açık hasar dosyası: ${ct.acikHasar.no}</h4>
+          <p>${ct.acikHasar.durum} — süreciniz takip ediliyor.</p>
+        </div>
+      </div>`;
+  }
+
+  c.innerHTML = `
+    <div class="acc-head">
+      <div class="acc-greeting">
+        <div class="eyebrow">Hesabım</div>
+        <h2>Merhaba, ${ct.ad}</h2>
+        <p>Müşteri No: <b>${ct.musteriNo}</b> · ${ct.email}</p>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-accent" onclick="go('teklif')">Yeni Teklif Al</button>
+        <button class="btn btn-light" onclick="hasarBildirModal()">Hasar Bildir</button>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="s-label">Aktif Poliçe</div><div class="s-val">${ct.aktifPoliceSayisi}</div><div class="s-sub" style="color:var(--ok);">Güvencedesiniz</div></div>
+      <div class="stat"><div class="s-label">Toplam Prim</div><div class="s-val">${ct.toplamPrim}</div><div class="s-sub" style="color:var(--ink-500);">yıllık</div></div>
+      <div class="stat"><div class="s-label">Geciken Ödeme</div><div class="s-val" style="color:${ct.gecikenTaksit?'var(--danger)':'var(--ok)'};">${ct.gecikenTaksit?ct.gecikenTaksit.tutar:'₺0'}</div><div class="s-sub" style="color:${ct.gecikenTaksit?'var(--danger)':'var(--ok)'};">${ct.gecikenTaksit?ct.gecikenTaksit.gunGecikme+' gün gecikme':'Güncel'}</div></div>
+      <div class="stat"><div class="s-label">Açık Hasar</div><div class="s-val" id="statHasar">${ct.acikHasar?'1':'0'}</div><div class="s-sub" style="color:var(--ink-500);">dosya</div></div>
+    </div>
+
+    ${alerts ? `<div style="margin-bottom:26px;">${alerts}</div>` : ''}
+
+    <div class="subgrid">
+      <div>
+        <div class="panel-title"><h3>Poliçelerim</h3></div>
+        <div id="policyList">
+          ${ct.policeler.map(policyRowHTML).join('')}
+        </div>
+      </div>
+      <div>
+        <div class="panel-title"><h3>Hızlı İşlemler</h3></div>
+        <div class="card" style="padding:18px;">
+          <button class="btn btn-light btn-block qa" onclick="hasarBildirModal()">${icon('alert')} Hasar Bildirimi Yap</button>
+          <button class="btn btn-light btn-block qa" onclick="${ct.gecikenTaksit?`odemeYap('${ct.gecikenTaksit.police}','${ct.gecikenTaksit.tutar}')`:`toast('Ödenmemiş taksitiniz yok.','info')`}">${icon('card')} Ödeme Yap</button>
+          <button class="btn btn-light btn-block qa" onclick="go('teklif')">${icon('file')} Yeni Teklif Al</button>
+          <button class="btn btn-light btn-block qa" style="margin-bottom:0;" onclick="go('urunler')">${icon('search')} Ürünleri Keşfet</button>
+        </div>
+        <div class="card" style="padding:18px; margin-top:16px; background:var(--brand-50); border-color:var(--brand-100);">
+          <h4 style="font-size:15px;">Yardıma mı ihtiyacınız var?</h4>
+          <p style="font-size:13.5px; margin-bottom:12px;">Müşteri hizmetlerimiz her gün yanınızda.</p>
+          <div style="display:flex; align-items:center; gap:8px; font-weight:700; color:var(--brand-700); font-size:18px;">${icon('phone')} 0850 000 00 00</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function policyRowHTML(p) {
+  const prod = productByKey(p.urun) || {ic:'file'};
+  const meta = p.plaka ? p.plaka : (p.adres ? p.adres : 'Poliçe');
+  return `
+    <div class="policy">
+      <div class="p-ic2">${icon(prod.ic)}</div>
+      <div class="p-info">
+        <h4>${p.ad} ${p.yenilemeYakin?'<span class="badge badge-warn" style="margin-left:6px;">Yenileme yakın</span>':''}</h4>
+        <div class="p-meta">${p.no} · ${meta} · Bitiş: ${p.bitis} · Prim: ${p.prim}</div>
+      </div>
+      <div class="p-actions">
+        <button class="btn btn-light btn-sm" onclick="hasarBildirModal('${p.no}','${p.urun}')">Hasar Bildir</button>
+        ${p.yenilemeYakin?`<button class="btn btn-primary btn-sm" onclick="yenile('${p.no}','${p.urun}','${p.bitis}')">Yenile</button>`:''}
+      </div>
+    </div>`;
+}
+
+/* ---------- Eylemler: hasar / ödeme / yenileme ---------- */
+function hasarBildirModal(police, urun) {
+  // basit: prompt yerine hazır hasar dosyası oluştur (dialog kullanmıyoruz)
+  const ct = App.contact;
+  const pol = police || (ct.policeler[0] && ct.policeler[0].no);
+  const u   = urun || (ct.policeler[0] && ct.policeler[0].urun) || 'kasko';
+
+  // önce hasar dosya numarasını üret (event payload'ına dahil edilecek)
+  const hasarNo = 'HSR-' + Math.floor(10000+Math.random()*89999);
+
+  const payload = triggerContext({
+    police: pol, urun: u,
+    hasarNo: hasarNo,
+    hasarTuru: 'Genel hasar bildirimi',
+    aciklama: 'Portal üzerinden hasar bildirimi başlatıldı.'
+  });
+  // TRIGGER: hasar bildirimi
+  onHasarBildir(payload);
+
+  // demo: açık hasar dosyası oluştur
+  ct.acikHasar = { no: hasarNo, durum: 'İnceleniyor', police: pol };
+
+  showSonuc({
+    ic:'file',
+    baslik:'Hasar bildiriminiz alındı',
+    mesaj:`<b>${pol}</b> poliçeniz için hasar dosyanız oluşturuldu (No: <b>${ct.acikHasar.no}</b>). Eksper süreci başlatıldı; gelişmelerden SMS ve e-posta ile haberdar edileceksiniz.`,
+    turBadge:null
+  });
+}
+
+function odemeYap(police, tutar) {
+  const payload = triggerContext({ police, tutar, taksit:'geciken' });
+  // TRIGGER: ödeme
+  onOdeme(payload);
+
+  // demo: geciken taksiti temizle
+  if (App.contact.gecikenTaksit && App.contact.gecikenTaksit.police === police) {
+    App.contact.gecikenTaksit = null;
+  }
+  showSonuc({
+    ic:'card',
+    baslik:'Ödemeniz alındı',
+    mesaj:`<b>${police}</b> poliçenizin <b>${tutar}</b> tutarındaki ödemesi başarıyla alındı. Poliçeniz güvence altında.`,
+    turBadge:null
+  });
+}
+
+function yenile(police, urun, bitis) {
+  const payload = triggerContext({ police, urun, bitisTarihi: bitis });
+  // TRIGGER: yenileme
+  onYenileme(payload);
+
+  const prod = productByKey(urun) || {ad:'Poliçe'};
+  showSonuc({
+    ic:'renew',
+    baslik:'Yenileme talebiniz alındı',
+    mesaj:`<b>${prod.ad}</b> (${police}) poliçeniz için yenileme süreci başlatıldı. Yeni dönem teklifiniz hazırlanıyor ve onayınıza sunulacak.`,
+    turBadge:null
+  });
+}
+
+/* =========================================================================
+   TOAST
+   ========================================================================= */
+function toast(msg, type) {
+  const w = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type||'');
+  t.textContent = msg;
+  w.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateY(10px)'; t.style.transition='.3s'; }, 2600);
+  setTimeout(()=>t.remove(), 3000);
+}
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+/* HTML içindeki <span class="ic" data-ico="..."> yer tutucularını SVG ile doldur */
+function hydrateStaticIcons() {
+  document.querySelectorAll('[data-ico]').forEach(el => {
+    el.innerHTML = icon(el.getAttribute('data-ico'));
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  captureUTM();          // URL'deki kampanya kaynağını (utm_*) yakala
+  hydrateStaticIcons();
+  renderProductGrids();
+  renderUserArea();
+  routeInitial();        // #kampanya gibi hash yönlendirmesi
+});
+
+/* Başlangıç yönlendirmesi — gizli #kampanya sayfası dahil */
+function routeInitial() {
+  var hash = (window.location.hash || '').replace('#','').toLowerCase();
+  if (hash === 'kampanya') { renderKampanya(); go('kampanya'); return; }
+  go('home');
+}
+window.addEventListener('hashchange', function(){
+  var hash = (window.location.hash || '').replace('#','').toLowerCase();
+  if (hash === 'kampanya') { renderKampanya(); go('kampanya'); }
+});
+</script>
+</body>
+</html>
