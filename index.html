@@ -55,6 +55,23 @@
 });
 </script>
 
+<!-- ===========================================================================
+     WEB PUSH APP  ·  CI-Journeys web push kanalı istemci kütüphanesi
+     ---------------------------------------------------------------------------
+     webpush-client.js jenerik bir pakettir (Web Push App ürününün parçası),
+     müşteriye özel hiçbir bilgi içermez. Aşağıdaki init() çağrısı bu portala
+     özel ayarları (VAPID public key, backend endpoint) dışarıdan veriyor.
+     sw.js dosyası bu index.html ile AYNI klasörde (portal kökünde) olmalı.
+=========================================================================== -->
+<script src="webpush-client.js"></script>
+<script>
+  WebPushApp.init({
+    vapidPublicKey: "BJVia88hAuEXY_P5jkPFqAGADVS8yX9RuBB4x8DHIMMXCdkJh674Al23-JTWsk0AmXXGs57SQfu53B0L8xT2mio",
+    registerEndpoint: "https://webpushapp-dev-func.azurewebsites.net/api/registerinstallation",
+    swPath: "sw.js"
+  });
+</script>
+
 <style>
   :root {
     /* Kurumsal mavi tema */
@@ -1441,6 +1458,17 @@ function doLogin(e) {
   try {
     onLogin(triggerContext({ email: email, oncekiZiyaretciId: oncekiZiyaretciId }));
   } catch(err) { console.warn("[MOBVEN-CI] onLogin atlandı:", err && err.message); }
+
+  // WEB PUSH APP: login sonrası push izni iste + Notification Hub'a kaydet.
+  // userId olarak email kullanılıyor — Dataverse Contact authId'siyle aynı kimlik (bkz. proje notları).
+  // Asenkron, login akışını bloklamaz; izin verilmezse/desteklenmezse sessizce devam eder.
+  try {
+    WebPushApp.subscribe(App.contact.email).then(function (result) {
+      console.log('[WEB-PUSH-APP] subscribe sonucu:', result);
+    }).catch(function (err) {
+      console.warn('[WEB-PUSH-APP] subscribe atlandı:', err && err.message);
+    });
+  } catch (err) { console.warn('[WEB-PUSH-APP] subscribe atlandı:', err && err.message); }
 
   // NOT: App.visitorId BİLEREK korunuyor (eskiden null yapılıyordu).
   // 1) CI trigger'ları boş öznitelik kabul etmiyor → ziyaretci_id dolu kalmalı
