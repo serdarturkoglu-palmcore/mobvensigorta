@@ -8,14 +8,30 @@
  *   <script src="webpush-client.js"></script>
  *   <script>
  *     WebPushApp.init({
- *       vapidPublicKey: "BJVia88h...",
- *       registerEndpoint: "https://<function-app>.azurewebsites.net/api/registerInstallation?code=...",
+ *       vapidPublicKey: "BBqmD8gy...",
+ *       registerEndpoint: "https://<function-app>.azurewebsites.net/api/registerInstallation",
  *       swPath: "sw.js",
  *     });
  *
  *     // Kullanıcı giriş yaptıktan / bir aksiyon aldıktan sonra:
  *     WebPushApp.subscribe(userId);
  *   </script>
+ *
+ * ---------------------------------------------------------------------------
+ * DEĞİŞİKLİK (2026-08-20): VAPID anahtarı döndüğünde otomatik yeniden abonelik.
+ *
+ * Sorun: Tarayıcıda zaten bir push aboneliği varsa ve o abonelik FARKLI bir
+ * applicationServerKey (VAPID public key) ile oluşturulmuşsa, Web Push API yeni
+ * aboneliği reddediyor:
+ *
+ *   "A subscription with a different applicationServerKey (or gcm_sender_id)
+ *    already exists; to change the applicationServerKey, unsubscribe then resubscribe."
+ *
+ * Bu, VAPID anahtar çifti her değiştiğinde (anahtar rotasyonu, ortam değişikliği,
+ * anahtarın kaybolup yeniden üretilmesi) TÜM kullanıcılarda yaşanır ve abonelik
+ * sessizce başarısız olur. Artık mevcut abonelik kontrol ediliyor: anahtarı
+ * farklıysa önce iptal edilip yenisi oluşturuluyor.
+ * ---------------------------------------------------------------------------
  */
 (function (global) {
   let config = null;
@@ -29,6 +45,47 @@
       outputArray[i] = rawData.charCodeAt(i);
     }
     return outputArray;
+  }
+
+  function bytesEqual(a, b) {
+    if (!a || !b || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Mevcut aboneliğin, config'teki VAPID public key ile oluşturulup oluşturulmadığını
+   * kontrol eder. Farklıysa (ya da anahtar okunamıyorsa) aboneliği iptal eder.
+   * @returns {Promise<PushSubscription|null>} Kullanılabilir mevcut abonelik, yoksa null.
+   */
+  async function reuseOrDropExistingSubscription(registration, desiredKeyBytes) {
+    const existing = await registration.pushManager.getSubscription();
+    if (!existing) return null;
+
+    let sameKey = false;
+    try {
+      const existingKey = existing.options && existing.options.applicationServerKey;
+      if (existingKey) {
+        sameKey = bytesEqual(new Uint8Array(existingKey), desiredKeyBytes);
+      }
+    } catch (e) {
+      // options okunamıyorsa güvenli tarafta kal: aboneliği yenile
+      sameKey = false;
+    }
+
+    if (sameKey) {
+      return existing;
+    }
+
+    // Anahtar değişmiş (ya da doğrulanamıyor) — eskisini iptal et ki yenisi açılabilsin.
+    try {
+      await existing.unsubscribe();
+    } catch (e) {
+      // İptal başarısız olsa bile subscribe'ı deneyeceğiz; hata oradan anlaşılır.
+    }
+    return null;
   }
 
   function init(userConfig) {
@@ -54,10 +111,16 @@
       return { supported: true, permission };
     }
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(config.vapidPublicKey),
-    });
+    const desiredKeyBytes = urlBase64ToUint8Array(config.vapidPublicKey);
+
+    let subscription = await reuseOrDropExistingSubscription(registration, desiredKeyBytes);
+
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: desiredKeyBytes,
+      });
+    }
 
     const json = subscription.toJSON();
     const installationId = `${userId}-${btoa(json.endpoint).slice(0, 16)}`;
@@ -81,5 +144,20 @@
     return { supported: true, permission, registered: true };
   }
 
-  global.WebPushApp = { init, subscribe };
+  /**
+   * Mevcut push aboneliğini iptal eder. Anahtar rotasyonunda veya kullanıcı
+   * bildirimleri kapatmak istediğinde kullanılabilir.
+   * NOT: Notification Hub'daki installation kaydı bu çağrıyla SİLİNMEZ —
+   * ölü kayıtlar push servisi 410 dönünce Hub tarafından temizlenir.
+   */
+  async function unsubscribe() {
+    if (!('serviceWorker' in navigator)) return { supported: false };
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    if (!existing) return { supported: true, wasSubscribed: false };
+    await existing.unsubscribe();
+    return { supported: true, wasSubscribed: true, unsubscribed: true };
+  }
+
+  global.WebPushApp = { init, subscribe, unsubscribe };
 })(window);
