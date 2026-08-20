@@ -56,6 +56,40 @@
   }
 
   /**
+   * DÜZELTME (2026-08-20): installationId artık endpoint'in TAMAMININ hash'inden
+   * üretiliyor, ilk 16 karakterinden değil.
+   *
+   * Önceki kod `btoa(endpoint).slice(0, 16)` kullanıyordu. Bütün FCM endpoint'leri
+   * "https://fcm.googleapis.com/fcm/send/" ile başladığı için (asıl benzersiz kısım
+   * sonda), base64'e çevrilince İLK 16 KARAKTER HERKESTE AYNI ÇIKIYORDU:
+   *
+   *   btoa("https://fcm.googleapis.com/fcm/send/AAA...").slice(0,16)
+   *     === btoa("https://fcm.googleapis.com/fcm/send/BBB...").slice(0,16)
+   *     === "aHR0cHM6Ly9mY20u"   (HER ZAMAN, endpoint ne olursa olsun)
+   *
+   * Sonuç: installationId = userId + "-" + (sabit, anlamsız 16 karakter).
+   * Aynı kullanıcı farklı bir tarayıcıda/anahtar rotasyonu sonrası YENİ bir
+   * endpoint ile abone olduğunda bile installationId DEĞİŞMİYORDU — Hub'daki
+   * kayıt güncelleniyordu ama bu, farklı endpoint'ler arasında sessiz
+   * üzerine-yazmalara (ve olası tutarsız/yarım güncellenmiş kayıtlara) açık
+   * bir tasarımdı. Artık SHA-256 ile endpoint'in TAMAMI hash'leniyor.
+   */
+  async function endpointFingerprint(endpoint) {
+    try {
+      const data = new TextEncoder().encode(endpoint);
+      const digest = await crypto.subtle.digest('SHA-256', data);
+      const bytes = new Uint8Array(digest);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '').slice(0, 22);
+    } catch (e) {
+      // crypto.subtle yoksa (çok eski tarayıcı / http olmayan bağlam) son çare:
+      // endpoint'in SONUNU kullan (asıl benzersiz kısım orada), baştan değil.
+      return endpoint.slice(-24).replace(/[^a-zA-Z0-9]/g, '').slice(0, 22) || 'noid';
+    }
+  }
+
+  /**
    * Mevcut aboneliğin, config'teki VAPID public key ile oluşturulup oluşturulmadığını
    * kontrol eder. Farklıysa (ya da anahtar okunamıyorsa) aboneliği iptal eder.
    * @returns {Promise<PushSubscription|null>} Kullanılabilir mevcut abonelik, yoksa null.
@@ -123,7 +157,7 @@
     }
 
     const json = subscription.toJSON();
-    const installationId = `${userId}-${btoa(json.endpoint).slice(0, 16)}`;
+    const installationId = `${userId}-${await endpointFingerprint(json.endpoint)}`;
 
     const response = await fetch(config.registerEndpoint, {
       method: 'POST',
